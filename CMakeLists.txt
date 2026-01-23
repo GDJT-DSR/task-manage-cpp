@@ -94,6 +94,7 @@ message(STATUS "找到 bcrypt.h: ${BCRYPT_INCLUDE_DIR}")
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                    ${CMAKE_CURRENT_SOURCE_DIR}/models
+                                   ${CMAKE_CURRENT_SOURCE_DIR}/jwt
                                    ${BCRYPT_INCLUDE_DIR})
 
 target_link_libraries(taskcpp PRIVATE ${BCRYPT_LIBRARY})

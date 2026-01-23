@@ -1,6 +1,6 @@
 #include "token.h"
 #include <drogon/utils/Utilities.h>
-// #include "jwt-cpp/jwt.h"
+// #include "jwt/jwt-cpp/h"
 #include "config.h"
 #include <random>
 #include <shared_mutex>
@@ -8,6 +8,7 @@
 #include <drogon/utils/Utilities.h>
 #include <chrono>
 #include "utils/timer.h"
+#include "jwt-cpp/jwt.h"
 
 using namespace token;
 
@@ -68,22 +69,22 @@ public:
 
 std::pair<std::string, std::string> token::generateToken(int64_t id, int64_t permission)
 {
-    // jwt::builder builder = jwt::create();
-    // jwt::date now = std::chrono::system_clock::now();
-    // builder.set_issued_at(now).set_expires_at(now + config::ACCESS_TOKEN_EXPIRED).set_issuer("task").set_subject("uat"); // user access token
-    // KeyGenerator::Key key = generator();
-    // builder.set_key_id(key.uuid);
+    jwt::builder builder = jwt::create();
+    jwt::date now = std::chrono::system_clock::now();
+    builder.set_issued_at(now).set_expires_at(now + config::ACCESS_TOKEN_EXPIRED).set_issuer("task").set_subject("uat"); // user access token
+    KeyGenerator::Key key = generator();
+    builder.set_key_id(key.uuid);
 
-    // picojson::value::object claim;
-    // claim["user_id"] = picojson::value(id);
-    // claim["permission"] = picojson::value(permission);
-    // builder.set_payload_claim("data", picojson::value(claim));
-    // const std::string accessToken = builder.sign(jwt::algorithm::hs256(key.key));
+    picojson::value::object claim;
+    claim["user_id"] = picojson::value(id);
+    claim["permission"] = picojson::value(permission);
+    builder.set_payload_claim("data", picojson::value(claim));
+    const std::string accessToken = builder.sign(jwt::algorithm::hs256(key.key));
 
-    // claim.erase("permission");
-    // builder.set_expires_at(now + config::REFRESH_TOKEN_EXPIRED).set_payload_claim("data", picojson::value(claim));
+    claim.erase("permission");
+    builder.set_expires_at(now + config::REFRESH_TOKEN_EXPIRED).set_payload_claim("data", picojson::value(claim));
 
-    // const std::string refreshToken = builder.sign(jwt::algorithm::hs256(key.key));
+    const std::string refreshToken = builder.sign(jwt::algorithm::hs256(key.key));
     std::string accessToken = "a";
     std::string refreshToken = "a";
 

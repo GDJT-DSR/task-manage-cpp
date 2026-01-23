@@ -56,7 +56,7 @@
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 99,
+				"line" : 100,
 				"parent" : 0
 			},
 			{
@@ -300,13 +300,13 @@
 			{
 				"command" : 8,
 				"file" : 0,
-				"line" : 103,
+				"line" : 104,
 				"parent" : 0
 			},
 			{
 				"command" : 9,
 				"file" : 0,
-				"line" : 108,
+				"line" : 109,
 				"parent" : 0
 			}
 		]
@@ -341,6 +341,10 @@
 				{
 					"backtrace" : 46,
 					"path" : "/Users/dsr/code/cpp/web/taskcpp/models"
+				},
+				{
+					"backtrace" : 46,
+					"path" : "/Users/dsr/code/cpp/web/taskcpp/jwt"
 				},
 				{
 					"backtrace" : 46,
