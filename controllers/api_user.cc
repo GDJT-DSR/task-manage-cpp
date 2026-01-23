@@ -48,10 +48,6 @@ Task<> api::user::login(const HttpRequestPtr req, std::function<void(const HttpR
         drogon::nosql::RedisClientPtr redis = app().getRedisClient();
         co_await redis->execCommandCoro("set auth:user_refresh_token:%lld %s EX %lld", *userData.getId(), tokenPair.second.c_str(), expires);
 
-        // callback(response::success([&](const HttpResponsePtr &resp)
-        //                            {
-        //                      resp->addCookie(cookie);
-        //                      callback(resp); }, data));
         auto resp = response::success(data);
         resp->addCookie(cookie);
         callback(resp);
@@ -71,5 +67,49 @@ Task<> api::user::login(const HttpRequestPtr req, std::function<void(const HttpR
     }
 
     callback(response::fail(k500InternalServerError, "服务器错误"));
+    co_return;
+}
+
+Task<> api::user::changePassword(const HttpRequestPtr req, std::function<void(const HttpResponsePtr &)> callback, dto::user_change_pwd data) const
+{
+    using Users = drogon_model::task::Users;
+    // 读数据库
+    auto client = drogon::app().getFastDbClient();
+    if (!client)
+    {
+        callback(response::fail(k500InternalServerError, "连接数据库失败"));
+    }
+    orm::CoroMapper<Users> mapper(client);
+    try
+    {
+        auto result = co_await mapper.findBy({Users::Cols::_id, req->getParameter("id")});
+
+        if (result.size() == 0)
+        {
+            callback(response::fail(k400BadRequest, "找不到用户"));
+            co_return;
+        }
+
+        // 验证权限 略
+
+        Users &userData = result[0];
+        std::int64_t id = *userData.getId();
+        if (!BCrypt::validatePassword(data.origin, *userData.getPassword()))
+        {
+            callback(response::fail(k400BadRequest, "用户名或密码错误"));
+            co_return;
+        }
+
+        std::string encpwd = BCrypt::generateHash(data.target, 10);
+        userData.setPassword(encpwd);
+
+        co_await mapper.update(userData);
+    }
+    catch (const std::exception &e)
+    {
+        LOG_ERROR << e.what();
+    }
+    callback(response::fail(k500InternalServerError, "服务器错误"));
+
     co_return;
 }

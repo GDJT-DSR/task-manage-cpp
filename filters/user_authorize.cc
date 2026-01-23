@@ -1,6 +1,7 @@
 #include "user_authorize.h"
 #include "utils/token.h"
 #include "utils/response.h"
+#include "jwt-cpp/jwt.h"
 
 using namespace drogon;
 using namespace user;
@@ -18,11 +19,27 @@ Task<HttpResponsePtr> user::authorize::doFilter(const HttpRequestPtr &req)
     try
     {
         auto claim = co_await token::parseAccessToken(token);
-        req->setParameter("id", std::to_string(claim->id));
+        if (claim)
+        {
+            req->setParameter("id", std::to_string(claim->id));
+            co_return nullptr;
+        }
+        else
+        {
+            co_return response::fail(k401Unauthorized, "unsupported token");
+        }
+    }
+    catch (const jwt::error::token_verification_exception &e)
+    {
+        co_return response::fail(k401Unauthorized, e.what());
     }
     catch (const std::exception &e)
     {
-        LOG_ERROR << "error occured when parsing token: " << e.what() << '\n';
-        co_return response::fail(k401Unauthorized, "未验证");
+        LOG_ERROR << e.what();
+        co_return response::fail(k500InternalServerError, "server error");
+    }
+    catch (...)
+    {
+        co_return response::fail(k500InternalServerError, "server error");
     }
 }

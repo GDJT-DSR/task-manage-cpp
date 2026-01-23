@@ -124,4 +124,5 @@ target_sources(${PROJECT_NAME}
 
 add_subdirectory(test)
 
-file(COPY config.json DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY config.jsonc DESTINATION ${CMAKE_BINARY_DIR})
+file(RENAME ${CMAKE_BINARY_DIR}/config.jsonc ${CMAKE_BINARY_DIR}/config.json)

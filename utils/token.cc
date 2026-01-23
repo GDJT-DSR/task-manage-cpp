@@ -94,28 +94,32 @@ std::pair<std::string, std::string> token::generateToken(int64_t id, int64_t per
 
 drogon::Task<std::unique_ptr<UserClaim>> token::parseAccessToken(std::string token)
 {
-    auto decoded = jwt::decode(token);
-    auto kid = decoded.get_key_id();
 
     auto redis = drogon::app().getRedisClient();
+    if (!redis)
+    {
+        throw std::runtime_error("cannot get redis");
+    }
+
+    auto decoded = jwt::decode(token);
+    auto kid = decoded.get_key_id();
     const drogon::nosql::RedisResult res = co_await redis->execCommandCoro("GET auth:token_keys:%s", kid.c_str());
     const std::string key = res.asString();
-
-    try
-    {
-        jwt::verify().with_subject("uat").with_issuer("task").allow_algorithm(jwt::algorithm::hs256(key)).verify(decoded);
-    }
-    catch (const std::exception &e)
-    {
-        LOG_ERROR << "access token err:" << e.what();
-        co_return nullptr;
-    }
+    auto verifier = jwt::verify();
+    verifier.with_subject("uat");
+    verifier.with_issuer("task");
+    verifier.allow_algorithm(jwt::algorithm::hs256(key));
+    verifier.verify(decoded);
 
     auto claim = decoded.get_payload_claim("data").to_json();
-    std::unique_ptr<UserClaim> uc;
-    uc->id = claim.get("id").get<int64_t>();
-    uc->permission = claim.get("permission").get<int64_t>();
-
-    // co_return std::move(uc);
-    co_return uc;
+    const auto &id = claim.get("user_id");
+    const auto &permission = claim.get("permission");
+    if (id.is<int64_t>() && permission.is<int64_t>())
+    {
+        std::unique_ptr<UserClaim> uc(new UserClaim);
+        uc->id = id.get<int64_t>();
+        uc->permission = permission.get<int64_t>();
+        co_return uc;
+    }
+    co_return nullptr;
 }
