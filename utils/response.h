@@ -5,32 +5,34 @@
 
 namespace response
 {
-    using handler = std::function<void(const HttpResponsePtr &)>;
 
     template <typename T>
-    void success(handler &&cb, T data)
+    drogon::HttpResponsePtr success(T data)
     {
         Json::Value json;
         json["code"] = 200;
         json["msg"] = "ok";
         json["data"] = data;
         auto resp = drogon::HttpResponse::newHttpJsonResponse(json);
-        cb(resp);
+        // cb(resp);
+        return std::move(resp);
     }
-    void success(handler &&cb)
+    drogon::HttpResponsePtr success()
     {
         Json::Value json;
         json["code"] = 200;
         json["msg"] = "ok";
         auto resp = drogon::HttpResponse::newHttpJsonResponse(json);
-        cb(resp);
+        // cb(resp);
+        return std::move(resp);
     }
-    void fail(handler &&cb, int code, std::string &&msg)
+    drogon::HttpResponsePtr fail(drogon::HttpStatusCode code, std::string &&msg)
     {
         Json::Value json;
         json["code"] = code;
         json["msg"] = msg;
         auto resp = drogon::HttpResponse::newHttpJsonResponse(json);
-        cb(resp);
+        // cb(resp);
+        return std::move(resp);
     }
 } // namespace response

@@ -31,13 +31,14 @@ public:
                                                                                                              { this->generate(); }, config::JWT_KEY_EXPIRED)
     {
         drogon::app().registerBeginningAdvice([this]()
-                                              { work.start(); });
+                                              { this->work.start(); });
+        // drogon::app().registerBeginningAdvice([this]()
+        //                                       { this->generate(); });
     }
 
     void generate()
     {
         std::unique_lock lock(mtx);
-        mtx.lock();
         for (auto &c : currentKey)
         {
             c = maps[dis(gen)];
@@ -49,7 +50,7 @@ public:
         const int64_t duration = std::chrono::duration_cast<std::chrono::seconds>(config::JWT_KEY_EXPIRED + config::REFRESH_TOKEN_EXPIRED).count();
 
         redisClient->execCommandAsync([this](const drogon::nosql::RedisResult &res)
-                                      { LOG_ERROR << "token存储成功"; },
+                                      { LOG_INFO << "token存储成功"; },
                                       [this](const drogon::nosql::RedisException &e)
                                       { LOG_ERROR << "token存储失败"; },
                                       "SET auth:token_keys:%s %s EX %lld", currentUuid.c_str(), currentKey.c_str(), duration);
@@ -85,15 +86,36 @@ std::pair<std::string, std::string> token::generateToken(int64_t id, int64_t per
     builder.set_expires_at(now + config::REFRESH_TOKEN_EXPIRED).set_payload_claim("data", picojson::value(claim));
 
     const std::string refreshToken = builder.sign(jwt::algorithm::hs256(key.key));
-    std::string accessToken = "a";
-    std::string refreshToken = "a";
+    // std::string accessToken = "a";
+    // std::string refreshToken = "a";
 
     return std::pair<std::string, std::string>{accessToken, refreshToken};
 }
 
-drogon::Task<UserClaim> token::parseAccessToken(std::string token)
+drogon::Task<std::unique_ptr<UserClaim>> token::parseAccessToken(std::string token)
 {
-    UserClaim uc;
-    // auto decoded = jwt::decode(token);
+    auto decoded = jwt::decode(token);
+    auto kid = decoded.get_key_id();
+
+    auto redis = drogon::app().getRedisClient();
+    const drogon::nosql::RedisResult res = co_await redis->execCommandCoro("GET auth:token_keys:%s", kid.c_str());
+    const std::string key = res.asString();
+
+    try
+    {
+        jwt::verify().with_subject("uat").with_issuer("task").allow_algorithm(jwt::algorithm::hs256(key)).verify(decoded);
+    }
+    catch (const std::exception &e)
+    {
+        LOG_ERROR << "access token err:" << e.what();
+        co_return nullptr;
+    }
+
+    auto claim = decoded.get_payload_claim("data").to_json();
+    std::unique_ptr<UserClaim> uc;
+    uc->id = claim.get("id").get<int64_t>();
+    uc->permission = claim.get("permission").get<int64_t>();
+
+    // co_return std::move(uc);
     co_return uc;
 }

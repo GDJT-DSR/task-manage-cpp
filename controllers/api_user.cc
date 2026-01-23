@@ -20,14 +20,14 @@ Task<> api::user::login(const HttpRequestPtr req, std::function<void(const HttpR
         if (result.size() != 1)
         {
             // Response<>(400, "用户名或密码错误").respond(std::move(callback));
-            response::fail(std::move(callback), 400, "用户名或密码错误");
+            callback(response::fail(k400BadRequest, "用户名或密码错误"));
             co_return;
         }
         const Users &userData = result[0];
         std::int64_t id = *userData.getId();
         if (!BCrypt::validatePassword(user.password, *userData.getPassword()))
         {
-            response::fail(std::move(callback), 400, "用户名或密码错误");
+            callback(response::fail(k400BadRequest, "用户名或密码错误"));
             co_return;
         }
         // 生成token
@@ -48,10 +48,13 @@ Task<> api::user::login(const HttpRequestPtr req, std::function<void(const HttpR
         drogon::nosql::RedisClientPtr redis = app().getRedisClient();
         co_await redis->execCommandCoro("set auth:user_refresh_token:%lld %s EX %lld", *userData.getId(), tokenPair.second.c_str(), expires);
 
-        response::success([&](const HttpResponsePtr &resp)
-                          {
-                             resp->addCookie(cookie);
-                             callback(resp); }, data);
+        // callback(response::success([&](const HttpResponsePtr &resp)
+        //                            {
+        //                      resp->addCookie(cookie);
+        //                      callback(resp); }, data));
+        auto resp = response::success(data);
+        resp->addCookie(cookie);
+        callback(resp);
 
         co_return;
     }
@@ -63,6 +66,10 @@ Task<> api::user::login(const HttpRequestPtr req, std::function<void(const HttpR
     {
         LOG_ERROR << "redis查询失败";
     }
-    response::fail(std::move(callback), 500, "服务器错误");
+    catch (...)
+    {
+    }
+
+    callback(response::fail(k500InternalServerError, "服务器错误"));
     co_return;
 }

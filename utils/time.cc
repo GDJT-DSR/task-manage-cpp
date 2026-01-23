@@ -11,7 +11,7 @@ void timer::interval::daemon(bool immediate)
     {
         {
             std::unique_lock<std::mutex> lock(mtx);
-            if (cv.wait_for(lock, this->duration) == std::cv_status::timeout)
+            if (cv.wait_for(lock, this->duration) == std::cv_status::no_timeout)
             {
                 break; // 定时器被停止
             }
