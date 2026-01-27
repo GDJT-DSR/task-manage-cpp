@@ -9,9 +9,9 @@ int main()
     // 错误处理
     drogon::app().setExceptionHandler([](const std::exception &e, const drogon::HttpRequestPtr &req, std::function<void(const drogon::HttpResponsePtr &)> &&cb)
                                       {
-        using response::exception::ResponsableException;
+        using response::exception::ResponsiveException;
         
-        if (const auto* re = dynamic_cast<const ResponsableException*>(&e))
+        if (const auto* re = dynamic_cast<const ResponsiveException*>(&e))
         {
             cb(re->resp());
         } else{

@@ -47,15 +47,15 @@ else ()
     message(STATUS "use c++20")
 endif ()
 
-# aux_source_directory(controllers CTL_SRC)
-file(GLOB_RECURSE CTL_SRC "controllers/*.cc")
+aux_source_directory(controllers CTL_SRC)
+#file(GLOB_RECURSE CTL_SRC "controllers/*.cc")
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
 aux_source_directory(utils UTILS_SRC)
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
-                    ${CMAKE_CURRENT_BINARY_DIR})
+        ${CMAKE_CURRENT_BINARY_DIR})
 # use the following line to create views with namespaces.
 # drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 #                     ${CMAKE_CURRENT_BINARY_DIR} TRUE)
@@ -66,55 +66,58 @@ drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 
 # bcrypt
 find_library(BCRYPT_LIBRARY
-    NAMES bcrypt libbcrypt
-    HINTS 
+        NAMES bcrypt libbcrypt
+        HINTS
         # /usr/local/opt/libbcrypt/lib    # Homebrew (Intel)
         # /opt/homebrew/opt/libbcrypt/lib # Homebrew (Apple Silicon)
         # /usr/local/lib                  # 默认安装路径
         /usr/local/include/bcrypt
 )
 find_path(BCRYPT_INCLUDE_DIR
-    NAMES bcrypt.h
-    HINTS
+        NAMES bcrypt.h
+        HINTS
         /usr/local/include/bcrypt
 )
 
-#postgres
 
-if(NOT BCRYPT_LIBRARY)
+set(BOOST_ASIO_DIR "/opt/homebrew/Cellar/asio/1.36.0/include")
+
+
+if (NOT BCRYPT_LIBRARY)
     message(FATAL_ERROR "未找到 libbcrypt 库，请先安装: brew install libbcrypt")
-endif()
-if(NOT BCRYPT_INCLUDE_DIR)
+endif ()
+if (NOT BCRYPT_INCLUDE_DIR)
     message(FATAL_ERROR "未找到 bcrypt.h 头文件")
-endif()
+endif ()
 message(STATUS "找到 libbcrypt: ${BCRYPT_LIBRARY}")
 message(STATUS "找到 bcrypt.h: ${BCRYPT_INCLUDE_DIR}")
 
 
 target_include_directories(${PROJECT_NAME}
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/models
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/jwt
-                                   ${BCRYPT_INCLUDE_DIR})
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/models
+        ${CMAKE_CURRENT_SOURCE_DIR}/jwt
+        ${BCRYPT_INCLUDE_DIR}
+        ${BOOST_ASIO_DIR})
 
 target_link_libraries(taskcpp PRIVATE ${BCRYPT_LIBRARY})
 
-list ( APPEND PRJ_COMPILE_FEATURES cxx_std_20 )
+list(APPEND PRJ_COMPILE_FEATURES cxx_std_20)
 
-target_compile_features ( ${PROJECT_NAME} 
-	PRIVATE 
-		${PRJ_COMPILE_FEATURES}
+target_compile_features(${PROJECT_NAME}
+        PRIVATE
+        ${PRJ_COMPILE_FEATURES}
 )
 
 target_sources(${PROJECT_NAME}
-               PRIVATE
-               ${SRC_DIR}
-               ${CTL_SRC}
-               ${FILTER_SRC}
-               ${PLUGIN_SRC}
-               ${MODEL_SRC}
-               ${UTILS_SRC}
-               )
+        PRIVATE
+        ${SRC_DIR}
+        ${CTL_SRC}
+        ${FILTER_SRC}
+        ${PLUGIN_SRC}
+        ${MODEL_SRC}
+        ${UTILS_SRC}
+)
 
 # ##############################################################################
 # uncomment the following line for dynamically loading views 

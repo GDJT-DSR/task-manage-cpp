@@ -16,7 +16,7 @@
       //address: Ip address,0.0.0.0 by default
       "address": "0.0.0.0",
       //port: Port number
-      "port": 9750,
+      "port": 5555,
       //https: If true, use https for security,false by default
       "https": false
     }
@@ -194,7 +194,9 @@
     "load_dynamic_views": false,
     //dynamic_views_path: If the path isn't prefixed with /, ./ or ../,
     //it is relative path of document_root path
-    "dynamic_views_path": ["./views"],
+    "dynamic_views_path": [
+      "./views"
+    ],
     //dynamic_views_output_path: Default by an empty string which means the output path of source
     //files is the path where the csp files locate. If the path isn't prefixed with /, it is relative
     //path of the current working directory.
