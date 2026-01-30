@@ -7,6 +7,7 @@
 #include <chrono>
 #include "jwt-cpp/jwt.h"
 #include "asio.hpp"
+#include "Timer.h"
 
 using namespace token;
 
@@ -25,8 +26,7 @@ class KeyGenerator {
 
     std::string currentKey;
     std::string currentUuid;
-    asio::io_context ctx{};
-    std::chrono::steady_clock::time_point expiredAt;
+    Timer timer;
 
     Key get() {
         std::shared_lock lock(mtx);
@@ -35,10 +35,6 @@ class KeyGenerator {
 
     void generate() {
         std::unique_lock lock(mtx);
-        if (std::chrono::steady_clock::now() < expiredAt) {
-            // 别的线程更新完毕了
-            return;
-        }
         for (auto &c: currentKey) {
             c = maps[dis(gen)];
         }
@@ -57,32 +53,28 @@ class KeyGenerator {
                                       },
                                       "SET auth:token_keys:%s %s EX %lld", currentUuid.c_str(), currentKey.c_str(),
                                       duration);
-        expiredAt = std::chrono::steady_clock::now() + config::JWT_KEY_EXPIRED;
     }
 
 public:
     KeyGenerator() : dis(0, static_cast<int>(maps.size() - 1)), gen(std::random_device{}()),
-                     currentKey(KEY_LENGTH, '-') {
+                     currentKey(KEY_LENGTH, '-'), timer(config::JWT_KEY_EXPIRED) {
         drogon::app().registerBeginningAdvice([this]() {
-            generate();
+            // generate();
+            this->timer.start([this] { generate(); });
         });
     }
 
 
     Key operator()() {
-        if (std::chrono::steady_clock::now() < expiredAt) {
-            // 直接返回
-            return get();
-        }
-        generate();
         return get();
     }
 } generator;
 
-std::pair<std::string, std::string> token::generateToken(int64_t id, int64_t permission) {
+std::pair<std::string, std::string>
+token::generateToken(int64_t id, int64_t permission, const std::string &updated_at) {
     jwt::builder builder = jwt::create();
     const jwt::date &now = std::chrono::system_clock::now();
-    builder.set_issued_at(now).set_expires_at(now + config::ACCESS_TOKEN_EXPIRED).set_issuer("task").set_subject("uat");
+    builder.set_issued_at(now).set_expires_at(now + config::ACCESS_TOKEN_EXPIRED).set_type("access");
     // user access token
     const auto &[key, uuid] = generator();
     builder.set_key_id(uuid);
@@ -94,6 +86,7 @@ std::pair<std::string, std::string> token::generateToken(int64_t id, int64_t per
     const std::string accessToken = builder.sign(jwt::algorithm::hs256(key));
 
     claim.erase("permission");
+    claim["updated_at"] = picojson::value(updated_at);
     builder.set_expires_at(now + config::REFRESH_TOKEN_EXPIRED).set_payload_claim("data", picojson::value(claim));
 
     const std::string refreshToken = builder.sign(jwt::algorithm::hs256(key));
@@ -149,13 +142,15 @@ drogon::Task<std::optional<UserClaim> > token::parseAccessToken(const std::strin
 }
 
 
-drogon::Task<std::optional<int64_t> > token::parseRefreshToken(const std::string &token) {
+drogon::Task<std::optional<std::pair<int64_t, std::string> > > token::parseRefreshToken(const std::string &token) {
     const auto claim = co_await getClaimJson(token);
     if (!claim) {
-        co_return {};
+        co_return std::nullopt;
     }
-    if (const auto &id = claim->get("user_id"); id.is<int64_t>()) {
-        co_return {id.get<int64_t>()};
+    const auto &id = claim->get("user_id");
+    const auto &updated_at = claim->get("updated_at");
+    if (id.is<int64_t>() && updated_at.is<std::string>()) {
+        co_return {{id.get<int64_t>(), updated_at.get<std::string>()}};
     }
-    co_return {};
+    co_return std::nullopt;
 }

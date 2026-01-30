@@ -1,14 +1,9 @@
-// #pragma once
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 #include <chrono>
 
-namespace config
-{
-    const std::chrono::duration ACCESS_TOKEN_EXPIRED = std::chrono::hours{1};
-    const std::chrono::duration REFRESH_TOKEN_EXPIRED = std::chrono::hours{24};
-    const std::chrono::duration JWT_KEY_EXPIRED = std::chrono::hours{6};
+namespace config {
+    constexpr auto ACCESS_TOKEN_EXPIRED = std::chrono::hours{1};
+    constexpr auto REFRESH_TOKEN_EXPIRED = std::chrono::hours{24};
+    constexpr auto JWT_KEY_EXPIRED = std::chrono::hours{6};
 } // namespace config
-
-#endif

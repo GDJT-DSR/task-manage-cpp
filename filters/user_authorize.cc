@@ -10,7 +10,6 @@ using namespace user;
 void authorize::doFilter(const HttpRequestPtr &req,
                          FilterCallback &&fcb,
                          FilterChainCallback &&fccb) {
-    //
     async_run([req,fcb=std::move(fcb),fccb=std::move(fccb)]()-> Task<> {
         const auto authorization = req->getHeader("Authorization");
 

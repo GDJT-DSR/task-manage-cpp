@@ -1,6 +1,5 @@
 #include "api_user.h"
 #include "utils/response.h"
-#include "models/Users.h"
 #include <bcrypt/BCrypt.hpp>
 #include "utils/token.h"
 #include "config.h"
@@ -10,14 +9,13 @@
 using namespace api;
 
 // Add definition of your processing function here
-using Users = drogon_model::task::Users;
 
 const std::string REFRESH_TOKEN_NAME("refresh_token");
 
 Task<> setToken(const std::function<void(const HttpResponsePtr &)> &callback, const int64_t id,
-                const int64_t permission) {
+                const int64_t permission, const std::string &updated_at) {
     // 生成token
-    const auto [accessToken, refreshToken] = token::generateToken(id, permission);
+    const auto [accessToken, refreshToken] = token::generateToken(id, permission, updated_at);
 
     Json::Value data;
     data["access_token"] = accessToken;
@@ -68,7 +66,8 @@ Task<> user::login(HttpRequestPtr req, std::function<void(const HttpResponsePtr 
             co_return;
         }
 
-        co_await setToken(callback, userData["id"].as<int64_t>(), userData["permission"].as<int64_t>());
+        co_await setToken(callback, userData["id"].as<int64_t>(), userData["permission"].as<int64_t>(),
+                          userData["updated_at"].as<std::string>());
 
         co_return;
     } catch (const orm::DrogonDbException &e) {
@@ -92,10 +91,10 @@ Task<> user::changePassword(const HttpRequestPtr req, std::function<void(const H
     // 读数据库
     const auto &client = drogon::app().getFastDbClient();
     if (!client) {
-        callback(response::fail(k500InternalServerError, "连接数据库失败"));
+        LOG_ERROR << "connect db error!";
+        callback(response::fail(k500InternalServerError, "server error"));
     }
     try {
-        std::chrono::system_clock::time_point before = std::chrono::system_clock::now();
         // 验证权限
         const auto permission = transform::bstring2int<int64_t>(req->getParameter("permission"));
         if (!permission::has_permission(permission, permission::user_permission::login)) {
@@ -103,43 +102,29 @@ Task<> user::changePassword(const HttpRequestPtr req, std::function<void(const H
             co_return;
         }
 
-        std::chrono::system_clock::time_point after = std::chrono::system_clock::now();
-        LOG_INFO << "验证权限：" << std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
-
         const std::string &id = req->getParameter("id");
 
         // auto result = co_await mapper.findBy({Users::Cols::_id, req->getParameter("id")});
         // auto result = co_await mapper.findByPrimaryKey(req->getParameter("id"));
-        before = std::chrono::system_clock::now();
         const auto &result = co_await client->execSqlCoro("SELECT id,username,password FROM users WHERE id = $1",
                                                           id);
         if (result.empty()) {
             callback(response::fail(k400BadRequest, "找不到用户"));
             co_return;
         }
-        after = std::chrono::system_clock::now();
-        LOG_INFO << "查库：" << std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
-
 
         const orm::Row &userData = result[0];
-        before = std::chrono::system_clock::now();
         if (!BCrypt::validatePassword(data->origin, userData["password"].as<std::string>())) {
             callback(response::fail(k400BadRequest, "用户名或密码错误"));
             co_return;
         }
-        after = std::chrono::system_clock::now();
 
 
-        before = std::chrono::system_clock::now();
         std::string encryptedPassword = BCrypt::generateHash(data->target, 10);
-        after = std::chrono::system_clock::now();
 
 
-        before = std::chrono::system_clock::now();
         const auto Result = co_await client->execSqlCoro("UPDATE users SET password=$1 WHERE id=$2", encryptedPassword,
                                                          id);
-        after = std::chrono::system_clock::now();
-        LOG_INFO << "存储密码：" << std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count();
 
         if (result.empty()) {
             callback(response::fail(k500InternalServerError, "更新失败"));
@@ -160,27 +145,35 @@ Task<> user::refreshToken(HttpRequestPtr req, std::function<void(const HttpRespo
         // 获取 refresh token
         const std::string &token_string = req->getCookie("refresh_token");
 
-        const auto &id = co_await token::parseRefreshToken(token_string);
-        if (!id) {
+        const auto &token = co_await token::parseRefreshToken(token_string);
+        if (!token) {
             // token 未验证
             callback(response::fail(k401Unauthorized, "invalid token"));
             co_return;
         }
+        const auto &[id,updated_at_from_token] = token.value();
         // 验证成功
-        const auto &client = drogon::app().getFastDbClient();
+        const auto &client = app().getFastDbClient();
         if (!client) {
             LOG_ERROR << "fail to connect to database";
             callback(response::fail(k500InternalServerError, "server error"));
             co_return;
         }
-        orm::CoroMapper<Users> mapper(client);
-        const auto &users = co_await mapper.findBy({Users::Cols::_id, id.value()});
-        if (users.empty()) {
-            callback(response::fail(k401Unauthorized, "user not found"));
+        // const auto &users = co_await mapper.findBy({Users::Cols::_id, id.value()});
+        const auto &res = co_await client->execSqlCoro("SELECT * FROM users WHERE id=$1", id);
+        if (res.size() != 1) {
+            callback(response::fail(k403Forbidden, "user not found"));
             co_return;
         }
-        const auto user = users[0];
-        co_await setToken(callback, *user.getId(), *user.getPermission());
+        const auto &user = res[0];
+        const auto &updated_at_from_db = user["updated_at"].as<std::string>();
+        if (updated_at_from_db != updated_at_from_token) {
+            callback(response::fail(k403Forbidden, "user too old"));
+            co_return;
+        }
+
+        co_await setToken(callback, user["id"].as<int64_t>(), user["permission"].as<int64_t>(),
+                          updated_at_from_db);
 
         co_return;
     } catch (const std::exception &e) {

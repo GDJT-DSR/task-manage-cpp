@@ -2,64 +2,69 @@
 
 #include <drogon/HttpResponse.h>
 
-namespace response {
+class response {
+    static drogon::HttpResponsePtr json2resp(const Json::Value &value) {
+        Json::StreamWriterBuilder builder;
+        builder.settings_["emitUTF8"] = true;
+        builder.settings_["indentation"] = "";
+        auto resp = drogon::HttpResponse::newHttpResponse();
+        resp->setContentTypeCode(drogon::CT_APPLICATION_JSON);
+        resp->setStatusCode(drogon::k200OK);
+        resp->setBody(Json::writeString(builder, value));
+        return resp;
+    }
+
+public:
     template<typename T>
-    inline drogon::HttpResponsePtr success(T data) {
+    static drogon::HttpResponsePtr success(T data) {
         Json::Value json;
         json["code"] = 200;
         json["msg"] = "ok";
         json["data"] = data;
         auto resp = drogon::HttpResponse::newHttpJsonResponse(json);
-        // cb(resp);
-        return std::move(resp);
+        return json2resp(json);
     }
 
-    inline drogon::HttpResponsePtr success() {
+    static drogon::HttpResponsePtr success() {
         Json::Value json;
         json["code"] = 200;
         json["msg"] = "ok";
         auto resp = drogon::HttpResponse::newHttpJsonResponse(json);
-        // cb(resp);
-        return std::move(resp);
+        return json2resp(json);
     }
 
-    inline drogon::HttpResponsePtr fail(drogon::HttpStatusCode code, const std::string &msg) {
+    static drogon::HttpResponsePtr fail(drogon::HttpStatusCode code, const std::string &msg) {
         Json::Value json;
         json["code"] = code;
         json["msg"] = msg;
         auto resp = drogon::HttpResponse::newHttpJsonResponse(json);
-        // cb(resp);
-        return std::move(resp);
+        return json2resp(json);
     }
 
-    namespace exception {
-        class ResponsiveException : public std::exception {
-        private:
-            drogon::HttpStatusCode code;
-            std::string msg;
 
-        public:
-            ResponsiveException(drogon::HttpStatusCode code, const std::string &msg) : code(code), msg(msg) {
-            }
+    class ResponsiveException : public std::exception {
+        drogon::HttpStatusCode code;
+        std::string msg;
 
-            ResponsiveException(drogon::HttpStatusCode code, std::string &&msg) : code(code), msg(std::move(msg)) {
-            }
+    public:
+        ResponsiveException(drogon::HttpStatusCode code, const std::string &msg) : code(code), msg(msg) {
+        }
 
-            ResponsiveException(const ResponsiveException &re) : code(re.code), msg(re.msg) {
-            }
+        ResponsiveException(drogon::HttpStatusCode code, std::string &&msg) : code(code), msg(std::move(msg)) {
+        }
 
-            ResponsiveException(ResponsiveException &&re) noexcept : code(re.code), msg(std::move(re.msg)) {
-            }
+        ResponsiveException(const ResponsiveException &re) : code(re.code), msg(re.msg) {
+        }
 
-            [[nodiscard]] const char *what() const noexcept override {
-                return msg.c_str();
-            }
+        ResponsiveException(ResponsiveException &&re) noexcept : code(re.code), msg(std::move(re.msg)) {
+        }
 
-            [[nodiscard]] drogon::HttpResponsePtr resp() const {
-                return response::fail(code, msg);
-            }
-        };
+        [[nodiscard]] const char *what() const noexcept override {
+            return msg.c_str();
+        }
 
-        const ResponsiveException PARAM_MISMATCH(drogon::k400BadRequest, "参数错误");
-    }
-} // namespace response
+        [[nodiscard]] drogon::HttpResponsePtr resp() const {
+            return response::fail(code, msg);
+        }
+    };
+}; // namespace response
