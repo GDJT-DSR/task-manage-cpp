@@ -568,4 +568,4 @@ models/*.h
 
 /.trae/
 
-/build/
+/build/config.json
