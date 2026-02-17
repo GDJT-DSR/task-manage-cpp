@@ -19,7 +19,7 @@ void authorize::doFilter(const HttpRequestPtr &req,
         }
         std::string token = authorization.substr(7);
         try {
-            if (auto claim = co_await token::parseAccessToken(token); claim) {
+            if (const auto claim = co_await token::parseAccessToken(token); claim) {
                 req->setParameter("id", std::to_string(claim->id));
                 req->setParameter("permission", transform::int2bstring(claim->permission));
                 fccb();

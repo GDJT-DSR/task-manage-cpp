@@ -1,6 +1,7 @@
 DROP TABLE IF EXISTS answers;
 DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS user_page;
+DROP TABLE IF EXISTS scorer_question;
 DROP TABLE IF EXISTS pages;
 DROP TABLE IF EXISTS users;
 
@@ -17,13 +18,13 @@ $$ LANGUAGE plpgsql;
 
 CREATE TABLE users
 (
-    id         SERIAL PRIMARY KEY,                                    -- 自增主键
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
-    username   VARCHAR(50)  NOT NULL UNIQUE,                          -- 用户名，唯一且非空
-    password   VARCHAR(255) NOT NULL,                                 -- 密码（推荐存储哈希值）
+    id         SERIAL PRIMARY KEY,                                                                                 -- 自增主键
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,                                              -- 创建时间，自动设置为当前时间
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,                                              -- 更新时间，自动设置为当前时间
+    username   VARCHAR(50)  NOT NULL UNIQUE,                                                                       -- 用户名，唯一且非空
+    password   VARCHAR(255) NOT NULL       DEFAULT "$2a$04$Rs1mQfo5kzxHz.YwYolNWe26cm0BOfxciNdr2IIFjoM5zcvTnI2w6", -- 密码（推荐存储哈希值） 默认密码是123456
     permission INT          NOT NULL       DEFAULT 3,
-    avatar     VARCHAR(500)                                           -- 头像URL，可选字段
+    avatar     VARCHAR(500)                                                                                        -- 头像URL，可选字段
 );
 CREATE TRIGGER update_timestamp_trigger
     BEFORE UPDATE
@@ -101,7 +102,8 @@ CREATE TABLE user_page
     id         SERIAL PRIMARY KEY,                                    -- 自增主键
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     user_id    INTEGER REFERENCES users (id),
-    page_id    INTEGER REFERENCES pages (id)
+    page_id    INTEGER REFERENCES pages (id),
+    UNIQUE (user_id, page_id)
 );
 
 ALTER TABLE IF EXISTS public.user_page
@@ -113,7 +115,8 @@ CREATE TABLE scorer_question
     id          SERIAL PRIMARY KEY,                                    -- 自增主键
     created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     user_id     INTEGER REFERENCES users (id),
-    question_id INTEGER REFERENCES questions (id)
+    question_id INTEGER REFERENCES questions (id),
+    UNIQUE (user_id, question_id)
 );
 ALTER TABLE IF EXISTS public.scorer_question
     OWNER to postgres;

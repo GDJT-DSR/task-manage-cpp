@@ -2,8 +2,10 @@
 
 #include <drogon/HttpResponse.h>
 
-class response {
-    static drogon::HttpResponsePtr json2resp(const Json::Value &value) {
+class response
+{
+    static drogon::HttpResponsePtr json2resp(const Json::Value& value)
+    {
         Json::StreamWriterBuilder builder;
         builder.settings_["emitUTF8"] = true;
         builder.settings_["indentation"] = "";
@@ -15,8 +17,9 @@ class response {
     }
 
 public:
-    template<typename T>
-    static drogon::HttpResponsePtr success(T data) {
+    template <typename T>
+    static drogon::HttpResponsePtr success(T data)
+    {
         Json::Value json;
         json["code"] = 200;
         json["msg"] = "ok";
@@ -25,7 +28,8 @@ public:
         return json2resp(json);
     }
 
-    static drogon::HttpResponsePtr success() {
+    static drogon::HttpResponsePtr success()
+    {
         Json::Value json;
         json["code"] = 200;
         json["msg"] = "ok";
@@ -33,7 +37,8 @@ public:
         return json2resp(json);
     }
 
-    static drogon::HttpResponsePtr fail(drogon::HttpStatusCode code, const std::string &msg) {
+    static drogon::HttpResponsePtr fail(drogon::HttpStatusCode code, const std::string& msg)
+    {
         Json::Value json;
         json["code"] = code;
         json["msg"] = msg;
@@ -41,29 +46,38 @@ public:
         return json2resp(json);
     }
 
+    drogon::HttpResponsePtr& fail(const char* str);
 
-    class ResponsiveException : public std::exception {
+
+    class ResponsiveException : public std::exception
+    {
         drogon::HttpStatusCode code;
         std::string msg;
 
     public:
-        ResponsiveException(drogon::HttpStatusCode code, const std::string &msg) : code(code), msg(msg) {
+        ResponsiveException(drogon::HttpStatusCode code, const std::string& msg) : code(code), msg(msg)
+        {
         }
 
-        ResponsiveException(drogon::HttpStatusCode code, std::string &&msg) : code(code), msg(std::move(msg)) {
+        ResponsiveException(drogon::HttpStatusCode code, std::string&& msg) : code(code), msg(std::move(msg))
+        {
         }
 
-        ResponsiveException(const ResponsiveException &re) : code(re.code), msg(re.msg) {
+        ResponsiveException(const ResponsiveException& re) : code(re.code), msg(re.msg)
+        {
         }
 
-        ResponsiveException(ResponsiveException &&re) noexcept : code(re.code), msg(std::move(re.msg)) {
+        ResponsiveException(ResponsiveException&& re) noexcept : code(re.code), msg(std::move(re.msg))
+        {
         }
 
-        [[nodiscard]] const char *what() const noexcept override {
+        [[nodiscard]] const char* what() const noexcept override
+        {
             return msg.c_str();
         }
 
-        [[nodiscard]] drogon::HttpResponsePtr resp() const {
+        [[nodiscard]] drogon::HttpResponsePtr resp() const
+        {
             return response::fail(code, msg);
         }
     };

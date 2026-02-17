@@ -2,31 +2,20 @@
 #include <chrono>
 #include <thread>
 
-class Timer {
-    std::chrono::seconds dur;
+class Timer
+{
+    std::chrono::seconds dur_;
 
-    std::atomic<bool> active = false;
-    std::thread worker;
-    std::function<void()> func;
-    std::mutex mtx;
-    std::condition_variable cv;
+    std::thread worker_;
+    std::function<void()> func_;
+    std::mutex mtx_;
+    std::condition_variable cv_;
+    std::atomic<bool> running_{true};
 
 public:
-    Timer(std::chrono::seconds dur) : dur(dur) {
-    }
+    explicit Timer(std::chrono::seconds);
 
-    void start(std::function<void()> &&f) {
-        if (this->active) {
-            return;
-        }
-        this->func = std::move(f);
-        this->active = true;
-        this->worker = std::thread([this]() {
-            while (true) {
-                this->func();
-                std::this_thread::sleep_for(dur);
-            }
-        });
-        this->worker.detach();
-    };
+    void start(std::function<void()>&&);
+
+    ~Timer();
 };
