@@ -566,3 +566,6 @@ FodyWeavers.xsd
 models/*.cc
 models/*.h
 
+/.trae/
+
+/build/

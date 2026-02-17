@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS answers;
+DROP TABLE IF EXISTS scorer_question;
 DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS user_page;
-DROP TABLE IF EXISTS scorer_question;
 DROP TABLE IF EXISTS pages;
 DROP TABLE IF EXISTS users;
 
@@ -65,7 +65,7 @@ CREATE TABLE questions
     title      TEXT             NOT NULL,
     "desc"     TEXT,
     "type"     question_type    NOT NULL,
-    settings   json,
+    settings   jsonb,
     index      INT              NOT NULL,
     max_score  INT              NOT NULL   DEFAULT 10,
     score_step DOUBLE PRECISION NOT NULL   DEFAULT 1,
@@ -85,7 +85,7 @@ CREATE TABLE answers
     id          SERIAL PRIMARY KEY,                                    -- 自增主键
     created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     content     TEXT,
-    details     json,
+    details     jsonb,
 
     score       INT,
 

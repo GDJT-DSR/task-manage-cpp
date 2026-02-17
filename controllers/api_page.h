@@ -4,6 +4,7 @@
 
 using namespace drogon;
 
+
 namespace api
 {
     class page : public drogon::HttpController<page>
@@ -19,3 +20,4 @@ namespace api
         static Task<> getSingle(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int64_t id);
     };
 }
+

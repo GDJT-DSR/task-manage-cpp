@@ -12,15 +12,15 @@ namespace permission {
     enum user_permission {
         login = 1,
         admin = 2,
-        view_task = 4,
+        view_page = 4,
         submit = 8,
-        manage_task = 16,
+        manage_page = 16,
         upload = 32,
         score = 64,
     };
 
 
-    enum task_permission {
+    enum page_permission {
         enable = 1,
         // 用户是否可见
         visible = 2,
