@@ -1,15 +1,11 @@
 #pragma once
-#include <concepts>
-#include <typeinfo>
-#include <asio/prefer.hpp>
-#include <asio/require.hpp>
 
-namespace permission {
-    inline bool has_permission(int64_t target, int64_t required) {
-        return (target & required) == required;
-    }
+namespace permission
+{
+    inline bool has_permission(int64_t target, int64_t required) { return (target & required) == required; }
 
-    enum user_permission {
+    enum user_permission
+    {
         login = 1,
         admin = 2,
         view_page = 4,
@@ -20,7 +16,8 @@ namespace permission {
     };
 
 
-    enum page_permission {
+    enum page_permission
+    {
         enable = 1,
         // 用户是否可见
         visible = 2,

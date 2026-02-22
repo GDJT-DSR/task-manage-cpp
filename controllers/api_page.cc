@@ -6,7 +6,7 @@
 #include "utils/permission.h"
 #include "utils/response.h"
 #include "utils/transform.h"
-#include "utils/utils.h"
+#include "utils/add_to_json.h"
 
 using namespace api;
 using namespace permission;
@@ -32,41 +32,42 @@ Task<> page::getAll(const HttpRequestPtr req, std::function<void(const HttpRespo
             co_return;
         }
 
-        const auto& client = app().getFastDbClient();
+        const auto client = app().getFastDbClient();
         if (!client)
         {
             callback(response::fail(k500InternalServerError, "服务器错误"));
             LOG_ERROR << "client is null";
+            co_return;
         }
         const auto& res = co_await client->execSqlCoro(
-            "SELECT pages.id,title,\"desc\",state,start_at,end_at FROM pages JOIN public.user_page up on pages.id = up.page_id WHERE up.user_id = $1",
+            "SELECT pages.id,title,\"desc\",state,start_at,end_at FROM pages "
+            "JOIN public.user_page up on pages.id = up.page_id "
+            "WHERE up.user_id = $1",
             id);
 
         Json::Value data(Json::arrayValue);
         for (const auto& item : res)
         {
+            const int64_t state = item["state"].as<int64_t>();
+            if (!has_permission(state, enable | visible)) { continue; }
             Json::Value single;
             single["id"] = item["id"].as<int64_t>();
             single["title"] = item["title"].as<std::string>();
-            single["readable"] = has_permission(item["state"].as<int64_t>(), readable);
+            single["readable"] = has_permission(state, readable);
             data.append(std::move(single));
         }
 
         callback(response::success(data));
         co_return;
     }
-    catch (const std::exception& e)
-    {
-        LOG_ERROR << e.what();
-    }
-    catch (...)
-    {
-    }
+    catch (const std::exception& e) { LOG_ERROR << e.what(); }
+    catch (...) {}
     callback(response::fail(k500InternalServerError, "server error"));
     co_return;
 }
 
-Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback, int64_t id)
+Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback,
+                       int64_t id)
 {
     try
     {
@@ -108,7 +109,7 @@ Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpRe
         const auto& page = pages.front();
         const int64_t state = page["state"].as<int64_t>();
         // 验证状态
-        if (permission::has_permission(state, enable | visible | readable))
+        if (!has_permission(state, enable | visible | readable))
         {
             callback(response::fail(k403Forbidden, "权限不足"));
             co_return;
@@ -155,10 +156,7 @@ Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpRe
         callback(response::success(data));
         co_return;
     }
-    catch (const std::exception& e)
-    {
-        LOG_ERROR << e.what();
-    }
+    catch (const std::exception& e) { LOG_ERROR << e.what(); }
     callback(response::fail(k500InternalServerError, "server error"));
 
     co_return;

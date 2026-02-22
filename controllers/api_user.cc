@@ -6,6 +6,8 @@
 #include "utils/transform.h"
 #include <bcrypt/BCrypt.hpp>
 
+#include "plugins/password_encoder/password_encoder.h"
+
 using namespace api;
 
 // Add definition of your processing function here
@@ -58,6 +60,12 @@ Task<> user::login(HttpRequestPtr req,
     LOG_ERROR << "connect db error!";
     co_return;
   }
+  const auto encoder = app().getPlugin<dsr::plugin::PasswordEncoder>();
+  if (!encoder)
+  {
+    callback(response::fail(k400BadRequest, "plugin not found"));
+    co_return;
+  }
   try
   {
     // auto result = co_await userModel.findBy({Users::Cols::_username,
@@ -74,8 +82,7 @@ Task<> user::login(HttpRequestPtr req,
     }
     const auto& userData = result[0];
 
-    if (!BCrypt::validatePassword(user->password,
-                                  userData["password"].as<std::string>()))
+    if (!encoder->verify(user->password, userData["password"].as<std::string>()))
     {
       callback(response::fail(k400BadRequest, "用户名或密码错误"));
       co_return;
@@ -87,18 +94,9 @@ Task<> user::login(HttpRequestPtr req,
 
     co_return;
   }
-  catch (const orm::DrogonDbException& e)
-  {
-    LOG_ERROR << "connect db error: " << e.base().what();
-  }
-  catch (const nosql::RedisException& e)
-  {
-    LOG_ERROR << "connect to redis error: " << e.what();
-  }
-  catch (...)
-  {
-    LOG_ERROR << "error occurred when logining";
-  }
+  catch (const orm::DrogonDbException& e) { LOG_ERROR << "connect db error: " << e.base().what(); }
+  catch (const nosql::RedisException& e) { LOG_ERROR << "connect to redis error: " << e.what(); }
+  catch (...) { LOG_ERROR << "error occurred when logining"; }
 
   callback(response::fail(k500InternalServerError, "server error"));
   co_return;
@@ -124,10 +122,8 @@ user::changePassword(const HttpRequestPtr req,
   try
   {
     // 验证权限
-    const auto permission =
-      transform::bstring2int<int64_t>(req->getParameter("permission"));
-    if (!permission::has_permission(permission,
-                                    permission::user_permission::login))
+    const int64_t user_permission = transform::bstring2int<int64_t>(req->getParameter("permission"));
+    if (!has_permission(user_permission, permission::login))
     {
       callback(response::fail(k403Forbidden, "权限不足"));
       co_return;
@@ -159,20 +155,11 @@ user::changePassword(const HttpRequestPtr req,
     const auto Result = co_await client->execSqlCoro(
       "UPDATE users SET password=$1 WHERE id=$2", encryptedPassword, id);
 
-    if (result.empty())
-    {
-      callback(response::fail(k500InternalServerError, "更新失败"));
-    }
+    if (result.empty()) { callback(response::fail(k500InternalServerError, "更新失败")); }
     callback(response::success());
   }
-  catch (const std::exception& e)
-  {
-    LOG_ERROR << e.what();
-  }
-  catch (...)
-  {
-    LOG_ERROR << "error occurred when changing password";
-  }
+  catch (const std::exception& e) { LOG_ERROR << e.what(); }
+  catch (...) { LOG_ERROR << "error occurred when changing password"; }
   callback(response::fail(k500InternalServerError, "服务器错误"));
 
   co_return;
@@ -229,18 +216,9 @@ user::refreshToken(const HttpRequestPtr req,
 
     co_return;
   }
-  catch (const std::exception& e)
-  {
-    LOG_ERROR << e.what();
-  }
-  catch (const drogon::orm::DrogonDbException& e)
-  {
-    LOG_ERROR << e.base().what();
-  }
-  catch (...)
-  {
-    LOG_ERROR << "error occurred when refreshing token";
-  }
+  catch (const std::exception& e) { LOG_ERROR << e.what(); }
+  catch (const drogon::orm::DrogonDbException& e) { LOG_ERROR << e.base().what(); }
+  catch (...) { LOG_ERROR << "error occurred when refreshing token"; }
   callback(response::fail(k500InternalServerError, "server error"));
   co_return;
 }

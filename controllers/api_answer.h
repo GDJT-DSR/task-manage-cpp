@@ -35,12 +35,13 @@ namespace api
     {
     public:
         METHOD_LIST_BEGIN
-            METHOD_ADD(answer::submit, "/{id}/submit", Post, "user::authorize");
-            METHOD_ADD(answer::upload, "/{id}/upload", Post, "user::authorize");
+            METHOD_ADD(answer::text, "/{id}/fill-in", Post);
+            METHOD_ADD(answer::upload, "/{id}/upload", Post);
         METHOD_LIST_END
 
-        static Task<> submit(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int64_t id,
-                             std::optional<dto::submit> submit);
+        static Task<> text(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback,
+                           int64_t question_id,
+                           std::optional<dto::submit> submit);
         static Task<> upload(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int64_t id);
     };
 }

@@ -28,7 +28,7 @@ namespace api
   public:
     METHOD_LIST_BEGIN
       METHOD_ADD(user::login, "/login", Post); // path is /absolute/path/{arg1}/{arg2}/list
-      METHOD_ADD(user::changePassword, "/change_password", Post, "user::authorize");
+      METHOD_ADD(user::changePassword, "/change_password", Post,);
       METHOD_ADD(user::refreshToken, "/refresh", Get);
     METHOD_LIST_END
 
@@ -48,16 +48,10 @@ namespace drogon
   inline std::optional<dto::user> fromRequest(const HttpRequest& req)
   {
     const auto& json = req.getJsonObject();
-    if (!json)
-    {
-      return std::nullopt;
-    }
+    if (!json) { return std::nullopt; }
     const auto& username = (*json)["username"];
     const auto& password = (*json)["password"];
-    if (username.isString() && password.isString())
-    {
-      return {{username.asString(), password.asString()}};
-    }
+    if (username.isString() && password.isString()) { return {{username.asString(), password.asString()}}; }
     return {};
   }
 
@@ -65,16 +59,10 @@ namespace drogon
   inline std::optional<dto::user_change_pwd> fromRequest(const HttpRequest& req)
   {
     const auto& json = req.getJsonObject();
-    if (!json)
-    {
-      return std::nullopt;
-    }
+    if (!json) { return std::nullopt; }
 
     if (const Json::Value &origin = (*json)["origin"], &target = (*json)["target"];
-      origin.isString() && target.isString())
-    {
-      return dto::user_change_pwd{origin.asString(), target.asString()};
-    }
+      origin.isString() && target.isString()) { return dto::user_change_pwd{origin.asString(), target.asString()}; }
     return {};
   }
 } // namespace drogon

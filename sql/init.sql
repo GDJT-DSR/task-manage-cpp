@@ -84,6 +84,7 @@ CREATE TABLE answers
 (
     id          SERIAL PRIMARY KEY,                                    -- 自增主键
     created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    updated_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
     content     TEXT,
     details     jsonb,
 
@@ -97,13 +98,19 @@ CREATE TABLE answers
 ALTER TABLE IF EXISTS public.answers
     OWNER to postgres;
 
+CREATE TRIGGER update_timestamp_trigger
+    BEFORE UPDATE
+    ON answers
+    FOR EACH ROW
+EXECUTE PROCEDURE update_timestamp();
+
 CREATE TABLE user_page
 (
     id         SERIAL PRIMARY KEY,                                    -- 自增主键
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     user_id    INTEGER REFERENCES users (id),
     page_id    INTEGER REFERENCES pages (id),
-    UNIQUE (user_id, page_id)
+    CONSTRAINT up UNIQUE (user_id, page_id)
 );
 
 ALTER TABLE IF EXISTS public.user_page
@@ -116,7 +123,7 @@ CREATE TABLE scorer_question
     created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     user_id     INTEGER REFERENCES users (id),
     question_id INTEGER REFERENCES questions (id),
-    UNIQUE (user_id, question_id)
+    CONSTRAINT sq UNIQUE (user_id, question_id)
 );
 ALTER TABLE IF EXISTS public.scorer_question
     OWNER to postgres;

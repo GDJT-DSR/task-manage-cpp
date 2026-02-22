@@ -16,6 +16,7 @@ elseif (HAS_ANY AND HAS_STRING_VIEW)
 else ()
     set(CMAKE_CXX_STANDARD 14)
 endif ()
+#set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -48,11 +49,12 @@ else ()
 endif ()
 
 aux_source_directory(controllers CTL_SRC)
-#file(GLOB_RECURSE CTL_SRC "controllers/*.cc")
+# file(GLOB_RECURSE CTL_SRC "controllers/*.cc")
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
 aux_source_directory(utils UTILS_SRC)
+file(GLOB_RECURSE PLUGINS_SRC "plugins/*.cc")
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
         ${CMAKE_CURRENT_BINARY_DIR})
@@ -117,6 +119,7 @@ target_sources(${PROJECT_NAME}
         ${PLUGIN_SRC}
         ${MODEL_SRC}
         ${UTILS_SRC}
+        ${PLUGINS_SRC}
 )
 
 # ##############################################################################
@@ -127,5 +130,4 @@ target_sources(${PROJECT_NAME}
 
 add_subdirectory(test)
 
-file(COPY config.jsonc DESTINATION ${CMAKE_BINARY_DIR})
-file(RENAME ${CMAKE_BINARY_DIR}/config.jsonc ${CMAKE_BINARY_DIR}/config.json)
+file(COPY config.yaml DESTINATION ${CMAKE_BINARY_DIR})

@@ -9,13 +9,13 @@
 #     # [Options, -SessionTicket],
 #     # [Options, Compression]
 #   ]
-# listeners:
-#     # address: Ip address,0.0.0.0 by default
-#   - address: 0.0.0.0
-#     # port: Port number
-#     port: 80
-#     # https: If true, use https for security,false by default
-#     https: false
+listeners:
+  # address: Ip address,0.0.0.0 by default
+  - address: 0.0.0.0
+    # port: Port number
+    port: 5555
+    # https: If true, use https for security,false by default
+    https: false
 #   - address: 0.0.0.0
 #     port: 443
 #     https: true
@@ -28,80 +28,80 @@
 #     ssl_conf: [
 #       # [MinProtocol, TLSv1.3]
 #     ]
-# db_clients:
-#     # name: Name of the client,'default' by default
-#   - name: default
-#     # rdbms: Server type, postgresql,mysql or sqlite3, "postgresql" by default
-#     rdbms: postgresql
-#     # filename: Sqlite3 db file name
-#     # filename: ''
-#     # host: Server address,localhost by default
-#     host: 127.0.0.1
-#     # port: Server port, 5432 by default
-#     port: 5432
-#     # dbname: Database name
-#     dbname: test
-#     # user: 'postgres' by default
-#     user: ''
-#     # passwd: '' by default
-#     passwd: ''
-#     # is_fast: false by default, if it is true, the client is faster but user can't call
-#     # any synchronous interface of it.
-#     is_fast: false
-#     # client_encoding: The character set used by the client. it is empty string by default which 
-#     # means use the default character set.
-#     # client_encoding: ''
-#     # number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of  
-#     # connections per IO thread, otherwise it is the total number of all connections.  
-#     number_of_connections: 1
-#     # timeout: -1 by default, in seconds, the timeout for executing a SQL query.
-#     # zero or negative value means no timeout.
-#     timeout: -1
-#     # auto_batch: this feature is only available for the PostgreSQL driver(version >= 14.0), see
-#     # the wiki for more details.
-#     auto_batch: false
-#     # connect_options: extra options for the connection. Only works for PostgreSQL now.
-#     # For more information, see https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-CONNECT-OPTIONS
-#     # connect_options:
-#     #   statement_timeout: '1s'
-# redis_clients:
-#     # name: Name of the client,'default' by default
-#   - name: default
-#     # host: Server IP, 127.0.0.1 by default
-#     host: 127.0.0.1
-#     # port: Server port, 6379 by default
-#     port: 6379
-#     # username: '' by default which means 'default' in redis ACL
-#     username: ''
-#     # passwd: '' by default
-#     passwd: ''
-#     # db index: 0 by default
-#     db: 0
-#     # is_fast: false by default, if it is true, the client is faster but user can't call
-#     # any synchronous interface of it.
-#     is_fast: false
-#     # number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of  
-#     # connections per IO thread, otherwise it is the total number of all connections.  
-#     number_of_connections: 1
-#     # timeout: -1.0 by default, in seconds, the timeout for executing a command.
-#     # zero or negative value means no timeout.
-#     timeout: -1
+db_clients:
+  # name: Name of the client,'default' by default
+  - name: default
+    # rdbms: Server type, postgresql,mysql or sqlite3, "postgresql" by default
+    rdbms: postgresql
+    # filename: Sqlite3 db file name
+    # filename: ''
+    # host: Server address,localhost by default
+    host: 127.0.0.1
+    # port: Server port, 5432 by default
+    port: 5432
+    # dbname: Database name
+    dbname: task
+    # user: 'postgres' by default
+    user: postgres
+    # passwd: '' by default
+    passwd: postgres
+    # is_fast: false by default, if it is true, the client is faster but user can't call
+    # any synchronous interface of it.
+    is_fast: true
+    # client_encoding: The character set used by the client. it is empty string by default which
+    # means use the default character set.
+    client_encoding: utf8
+    # number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of
+    # connections per IO thread, otherwise it is the total number of all connections.
+    number_of_connections: 5
+    # timeout: -1 by default, in seconds, the timeout for executing a SQL query.
+    # zero or negative value means no timeout.
+    timeout: 5.0
+    # auto_batch: this feature is only available for the PostgreSQL driver(version >= 14.0), see
+    # the wiki for more details.
+    auto_batch: true
+    # connect_options: extra options for the connection. Only works for PostgreSQL now.
+    # For more information, see https://www.postgresql.org/docs/16/libpq-connect.html#LIBPQ-CONNECT-OPTIONS
+    # connect_options:
+    #   statement_timeout: '1s'
+redis_clients:
+  # name: Name of the client,'default' by default
+  - name: default
+    # host: Server IP, 127.0.0.1 by default
+    host: 127.0.0.1
+    # port: Server port, 6379 by default
+    port: 6379
+    # username: '' by default which means 'default' in redis ACL
+    username: ''
+    # passwd: '' by default
+    passwd: ''
+    # db index: 0 by default
+    db: 0
+    # is_fast: false by default, if it is true, the client is faster but user can't call
+    # any synchronous interface of it.
+    is_fast: true
+    # number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of
+    # connections per IO thread, otherwise it is the total number of all connections.
+    number_of_connections: 5
+    # timeout: -1.0 by default, in seconds, the timeout for executing a command.
+    # zero or negative value means no timeout.
+    timeout: 5.0
 app:
   # number_of_threads: The number of IO threads, 1 by default, if the value is set to 0, the number of threads
   # is the number of CPU cores
-  number_of_threads: 1
+  number_of_threads: 0
   # enable_session: False by default
   enable_session: false
-  session_timeout: 0
-  # string value of SameSite attribute of the Set-Cookie HTTP response header
-  # valid value is either 'Null' (default), 'Lax', 'Strict' or 'None'
-  session_same_site: 'Null'
-  # session_cookie_key: The cookie key of the session, "JSESSIONID" by default
-  session_cookie_key: 'JSESSIONID'
-  # session_max_age: The max age of the session cookie, -1 by default
-  session_max_age: -1
+  #  session_timeout: 0
+  #  # string value of SameSite attribute of the Set-Cookie HTTP response header
+  #  # valid value is either 'Null' (default), 'Lax', 'Strict' or 'None'
+  #  session_same_site: 'Null'
+  #  # session_cookie_key: The cookie key of the session, "JSESSIONID" by default
+  #  session_cookie_key: 'JSESSIONID'
+  #  # session_max_age: The max age of the session cookie, -1 by default
+  #  session_max_age: -1
   # document_root: Root path of HTTP document, default path is ./
-  document_root: ./
+  document_root: ./html
   # home_page: Set the HTML file of the home page, the default value is "index.html"
   # If there isn't any handler registered to the path "/", the home page file in the "document_root" is send to clients as a response
   # to the request for "/".
@@ -144,10 +144,10 @@ app:
     # text/gemini:
     #   - gmi
     #   - gemini
-    }
+  }
   # locations: An array of locations of static files for GET requests.
   locations:
-      # uri_prefix: The URI prefix of the location prefixed with "/", the default value is "" that disables the location.
+    # uri_prefix: The URI prefix of the location prefixed with "/", the default value is "" that disables the location.
     - uri_prefix: '' # /.well-known/acme-challenge/
       # default_content_type: The default content type of the static files without
       # an extension. empty string by default.
@@ -164,11 +164,11 @@ app:
       # is_recursive: true by default. If it is set to false, files in sub directories can't be accessed.
       is_recursive: true
       # filters: string array, the filters applied to the location.
-      filters: []
+      filters: [ ]
   # max_connections: maximum number of connections, 100000 by default
   max_connections: 100000
   # max_connections_per_ip: maximum number of connections per client, 0 by default which means no limit
-  max_connections_per_ip: 0
+  max_connections_per_ip: 10
   # Load_dynamic_views: False by default, when set to true, drogon
   # compiles and loads dynamically "CSP View Files" in directories defined
   # by "dynamic_views_path"
@@ -182,9 +182,9 @@ app:
   # path of the current working directory.
   dynamic_views_output_path: ''
   # json_parser_stack_limit: 1000 by default, the maximum number of stack depth when reading a json string by the jsoncpp library.
-  json_parser_stack_limit: 1000
+  json_parser_stack_limit: 10
   # enable_unicode_escaping_in_json: true by default, enable unicode escaping in json.
-  enable_unicode_escaping_in_json: true
+  enable_unicode_escaping_in_json: false
   # float_precision_in_json: set precision of float number in json. 
   float_precision_in_json:
     # precision: 0 by default, 0 means use the default precision of the jsoncpp lib. 
@@ -198,16 +198,16 @@ app:
     # use_spdlog: Use spdlog library to log
     use_spdlog: false
     # log_path: Log file path,empty by default,in which case,logs are output to the stdout
-    # log_path: ./
+    log_path: ./log
     # logfile_base_name: Log file base name,empty by default which means drogon names logfile as
     # drogon.log ...
-    logfile_base_name: ''
+    logfile_base_name: 'log'
     # log_size_limit: 100000000 bytes by default,
     # When the log file size reaches "log_size_limit", the log file is switched.
     log_size_limit: 100000000
     # max_files: 0 by default,
     # When the number of old log files exceeds "max_files", the oldest file will be deleted. 0 means never delete.
-    max_files: 0
+    max_files: 10
     # log_level: "DEBUG" by default,options:"TRACE","DEBUG","INFO","WARN"
     # The TRACE level is only valid when built in DEBUG mode.
     log_level: DEBUG
@@ -288,26 +288,69 @@ app:
   enable_request_stream: false
 # plugins: Define all plugins running in the application
 plugins:
-    # name: The class name of the plugin
-  - name: drogon::plugin::PromExporter
-    # dependencies: Plugins that the plugin depends on. It can be commented out
-    dependencies: []
-    # config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
-    # It can be commented out
-    config:
-      path: /metrics
+  # name: The class name of the plugin
+  #  - name: drogon::plugin::PromExporter
+  #    # dependencies: Plugins that the plugin depends on. It can be commented out
+  #    dependencies: [ ]
+  #    # config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
+  #    # It can be commented out
+  #    config:
+  #      path: /metrics
   - name: drogon::plugin::AccessLogger
-    dependencies: []
+    dependencies: [ ]
     config:
       use_spdlog: false
-      log_path: ''
+      log_path: './log'
       log_format: ''
       log_file: access.log
-      log_size_limit: 0
+      log_size_limit: 100000
       use_local_time: true
       log_index: 0
       # show_microseconds: true
       # custom_time_format: ''
       # use_real_ip: false
+  - name: drogon::plugin::Hodor
+    dependencies: [ ]
+    config:
+      # The algorithm used to limit the number of requests.
+      # The default value is "token_bucket". other values are "fixed_window"
+      #or "sliding_window".
+      algorithm: token_bucket
+      # a regular expression (for matching the path of a request) list for
+      # URLs that have to be limited. if the list is empty, all URLs are limited.
+      urls: [ ^/api/.* ]
+      # The time unit in seconds. the default value is 60.
+      time_unit: 60
+      # The maximum number of requests in a time unit. the default value 0
+      # means no limit.
+      ip_capacity: 60
+      # The maximum number of requests in a time unit for a single user.
+      # a function must be provided to the plugin to get the user id from the request.
+      # the default value 0 means no limit.
+      user_capacity: 20
+      # Use the RealIpResolver plugin to get the real IP address of the
+      # request. if this option is true, the RealIpResolver plugin should be added to
+      # the dependencies list. the default value is false.
+      use_real_ip_resolver: false
+      # Multiple threads mode: the default value is true. if this option is
+      # true, some mutexes are used for thread-safe.
+      multi_threads: true
+      # The message body of the response when the request is rejected.
+      rejection_message: ''
+      # In seconds, the minimum expiration time of the limiters for different
+      # IPs or users. the default value is 600.
+      limiter_expire_time: 600
+      sub_limits:
+        - urls: [ /api/user/login ]
+          ip_capacity: 10
+        # Trusted proxy ip or cidr
+      trust_ips: [ ]
+  - name: dsr::plugin::PasswordEncoder
+    config:
+      method: dsr::password_encoder::BcryptEncoder
+  - name: drogon::plugin::GlobalFilters
+    config:
+      filters: [ user::authorize ]
+      exempt: (?!/api).*|/api/user/(?:login|refresh)
 # custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 
-custom_config: {}
+custom_config: { }

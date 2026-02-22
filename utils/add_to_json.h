@@ -3,6 +3,8 @@
 #include <drogon/orm/Field.h>
 #include <drogon/orm/Row.h>
 #include <json/value.h>
+#include <json/json.h>
+#include "utils/transform.h"
 
 namespace d_utils
 {
@@ -27,24 +29,31 @@ namespace d_utils
     inline bool add_to_json_if_exist<Json::Value>(Json::Value& json, const drogon::orm::Field field,
                                                   const std::string& c)
     {
-        if (field.isNull())
-        {
-            return false;
-        }
+        if (field.isNull()) { return false; }
         const std::string str = field.as<std::string>();
-        if (str.empty())
-        {
-            return false;
-        } // 解析原始字符串
-        Json::Value root;
-        Json::CharReaderBuilder reader;
-        std::string errors;
+        if (str.empty()) { return false; }
 
-        if (std::istringstream iss(str); !Json::parseFromStream(reader, iss, &root, &errors))
+        // 解析原始字符串
+        try
         {
-            LOG_ERROR << "parse json error: " << errors;
+            json[c] = transform::string2json(str);
+            return true;
         }
-        json[c] = root;
+        catch (const std::exception& e) { LOG_ERROR << e.what(); }
+        catch (...) {}
+
+        return false;
+    }
+
+    template <>
+    inline bool add_to_json_if_exist<std::string>(Json::Value& json, const drogon::orm::Field field,
+                                                  const std::string& c)
+    {
+        if (field.isNull()) { return false; }
+        const char* str = field.c_str();
+        if (str == nullptr) { return false; }
+        if (*str == 0) { return false; }
+        json[c] = str;
         return true;
     }
 }
