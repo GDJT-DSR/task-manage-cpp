@@ -347,10 +347,19 @@ plugins:
       trust_ips: [ ]
   - name: dsr::plugin::PasswordEncoder
     config:
-      method: dsr::password_encoder::BcryptEncoder
+      implement: dsr::password_encoder::BcryptEncoder
   - name: drogon::plugin::GlobalFilters
     config:
       filters: [ user::authorize ]
       exempt: (?!/api).*|/api/user/(?:login|refresh)
+  - name: drogon::plugin::SlashRemover
+    dependencies: [ "drogon::plugin::Redirector" ]
+    config:
+      remove_trailing_slashes: true
+      remove_duplicate_slashes: true
+      redirect: true
+  - name: drogon::plugin::Redirector
+    dependencies: [ ]
+
 # custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 
 custom_config: { }

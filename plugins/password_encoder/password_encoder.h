@@ -36,7 +36,7 @@ namespace dsr
             [[nodiscard]] bool verify(std::string_view raw, std::string_view encoded) const final;
 
         private:
-            std::shared_ptr<PasswordEncoderBase> encoder_base_{nullptr};
+            std::shared_ptr<PasswordEncoderBase> implement_ptr_{nullptr};
         };
     }
 }

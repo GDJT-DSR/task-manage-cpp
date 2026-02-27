@@ -12,7 +12,7 @@ using namespace api;
 
 // Add definition of your processing function here
 
-const std::string REFRESH_TOKEN_NAME("refresh_token");
+constexpr std::string REFRESH_TOKEN_NAME("refresh_token");
 
 Task<> setToken(const std::function<void(const HttpResponsePtr&)>& callback,
                 const int64_t id, const int64_t permission,
@@ -197,7 +197,7 @@ user::refreshToken(const HttpRequestPtr req,
     // const auto &users = co_await mapper.findBy({Users::Cols::_id,
     // id.value()});
     const auto& result =
-      co_await client->execSqlCoro("SELECT id,updated_at,permission FROM users WHERE id = $1", std::to_string(id));
+      co_await client->execSqlCoro("SELECT id,updated_at,permission FROM users WHERE id = $1", id);
     if (result.size() != 1)
     {
       callback(response::fail(k403Forbidden, "user not found"));

@@ -17,7 +17,7 @@ namespace api
 
         static Task<> getAll(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback);
 
-        static Task<> getSingle(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int64_t id);
+        static Task<> getSingle(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int id);
     };
 }
 

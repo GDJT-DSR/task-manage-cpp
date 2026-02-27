@@ -40,31 +40,21 @@ class KeyGenerator
     void generate()
     {
         std::unique_lock lock(mtx);
-        for (auto& c : currentKey)
-        {
-            c = maps[dis(gen)];
-        }
+        for (auto& c : currentKey) { c = maps[dis(gen)]; }
         currentUuid = drogon::utils::getUuid();
         // redisClient.return uuid;
         constexpr int64_t duration = std::chrono::duration_cast<std::chrono::seconds>(
             config::JWT_KEY_EXPIRED + config::REFRESH_TOKEN_EXPIRED).count();
         // 存入redis
-        drogon::app().getLoop()->queueInLoop([this]()
-        {
+        drogon::app().getLoop()->queueInLoop([this]() {
             const auto client = drogon::app().getFastRedisClient();
             if (!client)
             {
                 LOG_ERROR << "client is null";
                 throw std::runtime_error("client is null");
             }
-            client->execCommandAsync([](const drogon::nosql::RedisResult&)
-                                     {
-                                         LOG_INFO << "token存储成功";
-                                     },
-                                     [](const drogon::nosql::RedisException&)
-                                     {
-                                         LOG_ERROR << "token存储失败";
-                                     },
+            client->execCommandAsync([](const drogon::nosql::RedisResult&) { LOG_INFO << "token存储成功"; },
+                                     [](const drogon::nosql::RedisException&) { LOG_ERROR << "token存储失败"; },
                                      "SET auth:token_keys:%s %s EX %lld",
                                      this->currentUuid.c_str(),
                                      this->currentKey.c_str(),
@@ -76,11 +66,9 @@ public:
     KeyGenerator() : dis(0, static_cast<int>(maps.size() - 1)), gen(std::random_device{}()),
                      currentKey(KEY_LENGTH, '-'), timer(config::JWT_KEY_EXPIRED)
     {
-        drogon::app().registerBeginningAdvice([this]()
-        {
+        drogon::app().registerBeginningAdvice([this]() {
             generate();
-            this->timer.start([this]
-            {
+            this->timer.start([this] {
                 generate();
                 std::cout << "abc" << std::endl;
             });
@@ -88,10 +76,7 @@ public:
     }
 
 
-    Key operator()()
-    {
-        return get();
-    }
+    Key operator()() { return get(); }
 } generator;
 
 std::pair<std::string, std::string>
@@ -132,10 +117,7 @@ drogon::Task<std::optional<picojson::value>> getClaimJson(const std::string& tok
 {
     size_t idx = drogon::app().getCurrentThreadIndex();
     const auto redis = drogon::app().getFastRedisClient();
-    if (!redis)
-    {
-        throw std::runtime_error("cannot get redis");
-    }
+    if (!redis) { throw std::runtime_error("cannot get redis"); }
     try
     {
         const auto decoded = jwt::decode(token);
@@ -156,23 +138,15 @@ drogon::Task<std::optional<picojson::value>> getClaimJson(const std::string& tok
         co_await drogon::switchThreadCoro(drogon::app().getIOLoop(idx));
         co_return decoded.get_payload_claim("data").to_json();
     }
-    catch (const std::exception& e)
-    {
-        LOG_ERROR << e.what();
-    }
-    catch (...)
-    {
-    }
+    catch (const std::exception& e) { LOG_ERROR << e.what(); }
+    catch (...) {}
     co_return std::nullopt;
 }
 
 drogon::Task<std::optional<UserClaim>> token::parseAccessToken(const std::string& token)
 {
     const auto claim = co_await getClaimJson(token, "uat");
-    if (!claim)
-    {
-        co_return std::nullopt;
-    }
+    if (!claim) { co_return std::nullopt; }
     const auto& id = claim->get("user_id");
     const auto& permission = claim->get("permission");
     if (id.is<int64_t>() && permission.is<int64_t>())
@@ -180,7 +154,7 @@ drogon::Task<std::optional<UserClaim>> token::parseAccessToken(const std::string
         // std::unique_ptr<UserClaim> uc(new UserClaim);
         UserClaim userClaim{};
 
-        userClaim.id = id.get<int64_t>();
+        userClaim.id = static_cast<int>(id.get<int64_t>());
         userClaim.permission = permission.get<int64_t>();
         co_return userClaim;
     }
@@ -188,13 +162,10 @@ drogon::Task<std::optional<UserClaim>> token::parseAccessToken(const std::string
 }
 
 
-drogon::Task<std::optional<std::pair<int64_t, std::string>>> token::parseRefreshToken(const std::string& token)
+drogon::Task<std::optional<std::pair<int, std::string>>> token::parseRefreshToken(const std::string& token)
 {
     const auto claim = co_await getClaimJson(token, "urt");
-    if (!claim)
-    {
-        co_return std::nullopt;
-    }
+    if (!claim) { co_return std::nullopt; }
     const auto& id = claim->get("user_id");
     const auto& updated_at = claim->get("updated_at");
     if (id.is<int64_t>() && updated_at.is<std::string>())

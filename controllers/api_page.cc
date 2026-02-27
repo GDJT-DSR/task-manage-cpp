@@ -51,7 +51,7 @@ Task<> page::getAll(const HttpRequestPtr req, std::function<void(const HttpRespo
             const int64_t state = item["state"].as<int64_t>();
             if (!has_permission(state, enable | visible)) { continue; }
             Json::Value single;
-            single["id"] = item["id"].as<int64_t>();
+            single["id"] = item["id"].as<int>();
             single["title"] = item["title"].as<std::string>();
             single["readable"] = has_permission(state, readable);
             data.append(std::move(single));
@@ -67,7 +67,7 @@ Task<> page::getAll(const HttpRequestPtr req, std::function<void(const HttpRespo
 }
 
 Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback,
-                       int64_t id)
+                       int id)
 {
     try
     {
@@ -99,7 +99,7 @@ Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpRe
             "JOIN public.user_page up on pages.id = up.page_id "
             "WHERE up.user_id = $1 AND pages.id = $2",
             userid,
-            std::to_string(id)
+            id
         );
         if (pages.empty())
         {
@@ -114,16 +114,16 @@ Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpRe
             callback(response::fail(k403Forbidden, "权限不足"));
             co_return;
         }
-        const auto& questions_with_record = co_await client->execSqlCoro(
-            "SELECT questions.id,title,\"desc\",type,settings,index,max_score,ans.id as ans_id,ans.content,ans.details,ans.score FROM questions "
-            "LEFT JOIN (SELECT id,content,details,score,question_id FROM answers WHERE answerer_id = $2) ans "
+        const auto& questionsWithAnswer = co_await client->execSqlCoro(
+            "SELECT questions.id,title,\"desc\",type,settings,index,max_score,ans.id as ans_id,ans.content,ans.details,ans.score,ans.updated_at FROM questions "
+            "LEFT JOIN (SELECT id,content,details,score,question_id,updated_at FROM answers WHERE answerer_id = $2) ans "
             "ON ans.question_id = questions.id "
             "WHERE page_id = $1",
-            std::to_string(id),
+            id,
             userid
         );
         Json::Value data;
-        data["id"] = page["id"].as<int64_t>();
+        data["id"] = page["id"].as<int>();
         data["title"] = page["title"].as<std::string>();
         d_utils::add_to_json_if_exist(data, page, "desc");
         data["state"] = state;
@@ -131,22 +131,23 @@ Task<> page::getSingle(const HttpRequestPtr req, std::function<void(const HttpRe
         d_utils::add_to_json_if_exist(data, page, "end_at");
         Json::Value arr(Json::arrayValue);
 
-        for (const auto& question : questions_with_record)
+        for (const auto& question : questionsWithAnswer)
         {
             Json::Value single;
-            single["id"] = question["id"].as<int64_t>();
+            single["id"] = question["id"].as<int>();
             single["title"] = question["title"].as<std::string>();
             d_utils::add_to_json_if_exist(single, question, "desc");
             single["type"] = question["type"].as<std::string>();
             d_utils::add_to_json_if_exist<Json::Value>(single, question, "settings");
-            single["index"] = question["index"].as<int64_t>();
-            single["max_score"] = question["max_score"].as<int64_t>();
+            single["index"] = question["index"].as<int>();
+            single["max_score"] = question["max_score"].as<int>();
             if (!question["ans_id"].isNull())
             {
                 Json::Value answer;
-                answer["id"] = question["ans_id"].as<int64_t>();
+                answer["id"] = question["ans_id"].as<int>();
+                answer["updated_at"] = question["updated_at"].as<std::string>();
                 d_utils::add_to_json_if_exist(answer, question, "content");
-                d_utils::add_to_json_if_exist<int64_t>(answer, question, "score");
+                d_utils::add_to_json_if_exist<int>(answer, question, "score");
                 d_utils::add_to_json_if_exist<Json::Value>(answer, question, "details");
                 single["answer"] = std::move(answer);
             }

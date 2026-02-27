@@ -22,10 +22,8 @@ int main()
     app().setExceptionHandler(
         [](const std::exception& e, const drogon::HttpRequestPtr& req,
            std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
-            using RE = response::ResponsiveException;
-
-            if (const auto* re = dynamic_cast<const RE*>(&e)) { cb(re->resp()); }
-            else { cb(response::fail(drogon::k500InternalServerError, "server error")); }
+            LOG_ERROR << e.what();
+            cb(response::fail(drogon::k500InternalServerError, "server error"));
         });
 
     app().registerBeginningAdvice(beginAdvice);

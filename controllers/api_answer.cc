@@ -7,7 +7,7 @@
 using namespace api;
 using namespace permission;
 
-std::string validate(const orm::Row& question, const std::string& expected_type)
+std::string answer::validate(const orm::Row& question, const std::string& expected_type)
 {
     const auto state = question["state"].as<int64_t>();
     const auto type = question["type"].as<std::string>();
@@ -32,10 +32,9 @@ std::string validate(const orm::Row& question, const std::string& expected_type)
 }
 
 Task<> answer::text(HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback,
-                    int64_t question_id,
-                    std::optional<dto::submit> data)
+                    int question_id,
+                    std::optional<dto::TextSubmit> data)
 {
-    const std::string qid = std::to_string(question_id);
     if (!data)
     {
         callback(response::fail(k400BadRequest, "参数错误"));
@@ -70,7 +69,7 @@ Task<> answer::text(HttpRequestPtr req, std::function<void(const HttpResponsePtr
             "SELECT state,type,start_at,end_at,settings FROM questions "
             "JOIN pages ON pages.id = page_id "
             "WHERE questions.id = $1",
-            qid
+            question_id
         );
         if (questions.empty())
         {
@@ -91,7 +90,7 @@ Task<> answer::text(HttpRequestPtr req, std::function<void(const HttpResponsePtr
         const auto answers = co_await client->execSqlCoro(
             "SELECT id FROM answers WHERE answerer_id = $1 AND question_id = $2;",
             userid,
-            qid
+            question_id
         );
 
 
@@ -99,16 +98,16 @@ Task<> answer::text(HttpRequestPtr req, std::function<void(const HttpResponsePtr
         {
             // 生成新的回答
             const auto res = co_await client->execSqlCoro(
-                "INSERT INTO answers (content,  question_id, answerer_id) "
+                "INSERT INTO answers (content, question_id, answerer_id) "
                 "VALUES ($1, $2, $3);",
-                data->content,
+                data->target,
                 question_id,
                 userid
             );
             if (res.affectedRows() == 0)
             {
                 LOG_ERROR << std::format("error occurred when inserting answer.content={} of question{} by user{}",
-                                         data->content, qid, userid);
+                                         data->target, question_id, userid);
                 callback(response::fail(k500InternalServerError, "存储错误"));
                 co_return;
             }
@@ -117,21 +116,14 @@ Task<> answer::text(HttpRequestPtr req, std::function<void(const HttpResponsePtr
         {
             // 更新回答
             const auto res = co_await client->execSqlCoro(
-                "UPDATE answers SET content = $1 WHERE id = 2;",
-                data->content
+                "UPDATE answers SET content = $1 WHERE question_id = $2 AND content = $3",
+                data->target, question_id, data->origin
             );
-            if (res.affectedRows() == 0)
-            {
-                LOG_ERROR << std::format("error occurred when updating answer.content={} of question{} by user{}",
-                                         data->content, qid, userid);
-                callback(response::fail(k500InternalServerError, "存储错误"));
-                co_return;
-            }
+            if (res.affectedRows() == 0) { co_return callback(response::fail(k409Conflict, "数据变化，请刷新重试")); }
         }
         // client->execSqlCoro()
 
-        callback(response::success());
-        co_return;
+        co_return callback(response::success());;
     }
     catch (const std::exception& e) { LOG_ERROR << e.what(); }
     catch (const orm::DrogonDbException& e) { LOG_ERROR << e.base().what(); }
@@ -140,10 +132,10 @@ Task<> answer::text(HttpRequestPtr req, std::function<void(const HttpResponsePtr
     co_return;
 }
 
-Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback, int64_t id)
+Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback, int id)
 {
     MultiPartParser parser;
-    if (parser.parse(req) == 0 || parser.getFiles().empty())
+    if (parser.parse(req) != 0 || parser.getFiles().empty())
     {
         callback(response::fail(k400BadRequest, "请传入文件"));
         co_return;
@@ -175,7 +167,7 @@ Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponseP
     {
         const auto& answer_res = co_await client->execSqlCoro(
             "SELECT a.id, a.question_id, a.answerer_id FROM answers a WHERE a.id = $1",
-            std::to_string(id)
+            id
         );
         if (answer_res.empty())
         {
@@ -184,8 +176,8 @@ Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponseP
         }
 
         const auto& answer = answer_res[0];
-        const int64_t answerer_id = answer["answerer_id"].as<int64_t>();
-        const int64_t question_id = answer["question_id"].as<int64_t>();
+        const int answerer_id = answer["answerer_id"].as<int>();
+        const int question_id = answer["question_id"].as<int>();
 
         if (answerer_id != std::stoll(userid))
         {
@@ -195,7 +187,7 @@ Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponseP
 
         const auto& question_res = co_await client->execSqlCoro(
             "SELECT q.id, q.type, q.page_id FROM questions q WHERE q.id = $1",
-            std::to_string(question_id)
+            question_id
         );
         if (question_res.empty())
         {
@@ -205,7 +197,7 @@ Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponseP
 
         const auto& question = question_res[0];
         const std::string question_type = question["type"].as<std::string>();
-        const int64_t page_id = question["page_id"].as<int64_t>();
+        const int page_id = question["page_id"].as<int>();
 
         if (question_type != "upload")
         {
@@ -215,7 +207,7 @@ Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponseP
 
         const auto& page_res = co_await client->execSqlCoro(
             "SELECT p.id, p.state FROM pages p WHERE p.id = $1",
-            std::to_string(page_id)
+            page_id
         );
         if (page_res.empty())
         {
@@ -235,7 +227,7 @@ Task<> answer::upload(HttpRequestPtr req, std::function<void(const HttpResponseP
         const auto& user_page_res = co_await client->execSqlCoro(
             "SELECT 1 FROM user_page WHERE user_id = $1 AND page_id = $2",
             userid,
-            std::to_string(page_id)
+            page_id
         );
         if (user_page_res.empty())
         {
