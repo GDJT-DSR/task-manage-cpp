@@ -138,6 +138,11 @@ CMakeUserPresets.json
 
 # CMake
 cmake-build-*/
+build/
+
+
+# format
+.clang-format
 
 # Mongo Explorer plugin
 .idea/**/mongoSettings.xml
@@ -569,3 +574,4 @@ models/*.h
 /.trae/
 
 /build/config.json
+
