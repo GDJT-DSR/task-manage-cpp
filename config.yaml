@@ -118,7 +118,7 @@ app:
   # upload_path: The path to save the uploaded file. "uploads" by default. 
   # If the path isn't prefixed with /, ./ or ../,
   # it is relative path of document_root path
-  upload_path: uploads
+  upload_path: ../uploads
   # file_types:
   # HTTP download file types,The file types supported by drogon
   # by default are "html", "js", "css", "xml", "xsl", "txt", "svg",
@@ -137,6 +137,7 @@ app:
     - apk
     - cur
     - xml
+    - webp
   # mime: A dictionary that extends the internal MIME type support. Maps extensions into new MIME types
   # note: This option only adds MIME to the sever. `file_types` above have to be set for the server to serve them.
   mime: {

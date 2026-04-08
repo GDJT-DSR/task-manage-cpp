@@ -96,14 +96,32 @@ message(STATUS "找到 libbcrypt: ${BCRYPT_LIBRARY}")
 message(STATUS "找到 bcrypt.h: ${BCRYPT_INCLUDE_DIR}")
 
 
+find_library(WEBP_LIB
+        NAMES webp libwebp
+        HINTS
+        # /usr/local/opt/libbcrypt/lib    # Homebrew (Intel)
+        # /opt/homebrew/opt/libbcrypt/lib # Homebrew (Apple Silicon)
+        # /usr/local/lib                  # 默认安装路径
+        /usr/local/include/bcrypt
+        /opt/homebrew/Cellar/webp/1.6.0/lib
+)
+find_path(WEBP_INCLUDE_DIR
+        NAMES bcrypt.h
+        HINTS
+        /usr/local/include/bcrypt
+        /opt/homebrew/Cellar/webp/1.6.0/include/webp/
+)
+
 target_include_directories(${PROJECT_NAME}
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/models
         ${CMAKE_CURRENT_SOURCE_DIR}/jwt
         ${BCRYPT_INCLUDE_DIR}
-        ${BOOST_ASIO_DIR})
+        ${WEBP_INCLUDE_DIR}
+        )
 
 target_link_libraries(taskcpp PRIVATE ${BCRYPT_LIBRARY})
+target_link_libraries(taskcpp PRIVATE ${WEBP_LIB})
 
 list(APPEND PRJ_COMPILE_FEATURES cxx_std_20)
 

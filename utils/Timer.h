@@ -1,9 +1,10 @@
 #pragma once
 #include <chrono>
+#include <condition_variable>
+#include <functional>
 #include <thread>
 
-class Timer
-{
+class Timer {
     std::chrono::seconds dur_;
 
     std::thread worker_;
@@ -12,10 +13,10 @@ class Timer
     std::condition_variable cv_;
     std::atomic<bool> running_{true};
 
-public:
+  public:
     explicit Timer(std::chrono::seconds);
 
-    void start(std::function<void()>&&);
+    void start(std::function<void()> &&);
 
     ~Timer();
 };

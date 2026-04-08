@@ -54,7 +54,7 @@ CREATE TRIGGER update_timestamp_trigger
     FOR EACH ROW
 EXECUTE PROCEDURE update_timestamp();
 
--- CREATE TYPE question_type AS ENUM ('choose', 'fill_in', 'upload','none');
+CREATE TYPE question_type AS ENUM ('choose', 'fill_in', 'upload','none');
 
 CREATE TABLE questions
 (
