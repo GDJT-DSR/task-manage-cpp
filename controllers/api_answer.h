@@ -41,7 +41,7 @@ namespace api
         static Task<> text(HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback,
                            int question_id,
                            std::optional<dto::TextSubmit> data);
-        static Task<> upload(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int32_t id);
+        static Task<> image(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int32_t id);
         static std::string validate(const orm::Row&, const std::string&);
     };
 }
