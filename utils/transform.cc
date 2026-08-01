@@ -2,12 +2,21 @@
 
 #include <json/value.h>
 #include <json/reader.h>
+#include <trantor/utils/Logger.h>
 
 Json::Value transform::string2json(const std::string& str)
 {
     Json::Value root;
-    Json::CharReaderBuilder reader;
+    Json::CharReaderBuilder builder;
     std::string errors;
-    if (std::istringstream iss(str); !Json::parseFromStream(reader, iss, &root, &errors)) { return root; }
+    std::unique_ptr<Json::CharReader> reader{builder.newCharReader()};
+    bool state = reader->parse(
+        str.c_str(),
+        str.c_str() + str.length(),
+        &root,
+        &errors
+    );
+    if (state) { return root; }
+    // LOG_ERROR << errors;
     throw std::runtime_error(errors);
 }

@@ -3,25 +3,24 @@
 
 #include "utils/response.h"
 
-void beginAdvice()
-{
+void beginAdvice() {
     auto hodor = app().getSharedPlugin<plugin::Hodor>();
-    hodor->setRejectResponseFactory([](const HttpRequestPtr&) {
+    hodor->setRejectResponseFactory([](const HttpRequestPtr &) {
         return response::fail(k429TooManyRequests, "Too many requests");
     });
-    hodor->setUserIdGetter([](const HttpRequestPtr& req) { return req->getParameter("id"); });
+    hodor->setUserIdGetter(
+        [](const HttpRequestPtr &req) { return req->getParameter("id"); });
 }
 
-int main()
-{
+int main() {
     // Set HTTP listener address and port
     //  drogon::app().addListener("0.0.0.0", 5555);
     // Load config file
 
     // 错误处理
     app().setExceptionHandler(
-        [](const std::exception& e, const drogon::HttpRequestPtr& req,
-           std::function<void(const drogon::HttpResponsePtr&)>&& cb) {
+        [](const std::exception &e, const drogon::HttpRequestPtr &req,
+           std::function<void(const drogon::HttpResponsePtr &)> &&cb) {
             LOG_ERROR << e.what();
             cb(response::fail(drogon::k500InternalServerError, "server error"));
         });

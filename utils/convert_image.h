@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <string>
 #include <vector>
 
 bool ConvertToWebP(const uint8_t *input_data, size_t input_size, int quality,

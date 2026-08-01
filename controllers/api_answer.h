@@ -11,7 +11,7 @@ namespace dto
         std::string target;
         std::string origin;
     };
-}
+} // namespace dto
 
 namespace drogon
 {
@@ -21,12 +21,12 @@ namespace drogon
         const auto& json = req.getJsonObject();
         if (!json) { return std::nullopt; }
 
-        if (const Json::Value &target = (*json)["target"], &origin = (*json)["origin"];
+        if (const Json::Value &target = (*json)["target"],
+                              &origin = (*json)["origin"];
             target.isString() && origin.isString()) { return dto::TextSubmit{target.asString(), origin.asString()}; }
         return std::nullopt;
     }
-}
-
+} // namespace drogon
 
 namespace api
 {
@@ -34,14 +34,20 @@ namespace api
     {
     public:
         METHOD_LIST_BEGIN
-            METHOD_ADD(answer::text, "/{id}/fill-in", Post);
-            METHOD_ADD(answer::upload, "/{id}/upload", Post);
+            METHOD_ADD(answer::text, "/{id}/fill_in", Post);
+            METHOD_ADD(answer::image, "/{id}/image", Post);
+            METHOD_ADD(answer::choose, "/{id}/choose", Post);
         METHOD_LIST_END
 
-        static Task<> text(HttpRequestPtr req, std::function<void(const HttpResponsePtr&)> callback,
-                           int question_id,
-                           std::optional<dto::TextSubmit> data);
-        static Task<> image(HttpRequestPtr req, std::function<void (const HttpResponsePtr&)> callback, int32_t id);
-        static std::string validate(const orm::Row&, const std::string&);
+        static Task<> text(HttpRequestPtr req,
+                           std::function<void(const HttpResponsePtr&)> callback,
+                           int question_id, std::optional<dto::TextSubmit> data);
+        static Task<> image(HttpRequestPtr req,
+                            std::function<void(const HttpResponsePtr&)> callback,
+                            int32_t id);
+        static Task<> choose(HttpRequestPtr req,
+                             std::function<void(const HttpResponsePtr&)> callback,
+                             int question_id, std::optional<dto::TextSubmit> data);
+        static std::string validate(const orm::Row&, const std::string&, bool change);
     };
-}
+} // namespace api

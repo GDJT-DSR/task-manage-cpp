@@ -18,13 +18,13 @@ $$ LANGUAGE plpgsql;
 
 CREATE TABLE users
 (
-    id         SERIAL PRIMARY KEY,                                                                                 -- 自增主键
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,                                              -- 创建时间，自动设置为当前时间
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,                                              -- 更新时间，自动设置为当前时间
-    username   VARCHAR(50)  NOT NULL UNIQUE,                                                                       -- 用户名，唯一且非空
-    password   VARCHAR(255) NOT NULL       DEFAULT "$2a$04$Rs1mQfo5kzxHz.YwYolNWe26cm0BOfxciNdr2IIFjoM5zcvTnI2w6", -- 密码（推荐存储哈希值） 默认密码是123456
-    permission INT          NOT NULL       DEFAULT 3,
-    avatar     VARCHAR(500)                                                                                        -- 头像URL，可选字段
+    id         SERIAL PRIMARY KEY,                                                                           -- 自增主键
+    created_at TIMESTAMPTZ           DEFAULT CURRENT_TIMESTAMP,                                              -- 创建时间，自动设置为当前时间
+    updated_at TIMESTAMPTZ           DEFAULT CURRENT_TIMESTAMP,                                              -- 更新时间，自动设置为当前时间
+    username   VARCHAR(50)  NOT NULL UNIQUE,                                                                 -- 用户名，唯一且非空
+    password   VARCHAR(255) NOT NULL DEFAULT '$2a$04$Rs1mQfo5kzxHz.YwYolNWe26cm0BOfxciNdr2IIFjoM5zcvTnI2w6', -- 密码（推荐存储哈希值） 默认密码是123456
+    permission INT          NOT NULL DEFAULT 109,
+    avatar     VARCHAR(500)                                                                                  -- 头像URL，可选字段
 );
 CREATE TRIGGER update_timestamp_trigger
     BEFORE UPDATE
@@ -37,14 +37,14 @@ ALTER TABLE IF EXISTS public.users
 
 CREATE TABLE pages
 (
-    id         SERIAL PRIMARY KEY,                                    -- 自增主键
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
+    id         SERIAL PRIMARY KEY,                      -- 自增主键
+    created_at TIMESTAMPTZ   DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    updated_at TIMESTAMPTZ   DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
     title      TEXT NOT NULL,
     "desc"     TEXT,
-    state      INT  NOT NULL               DEFAULT 3,
-    start_at   TIMESTAMP WITHOUT TIME ZONE,
-    end_at     TIMESTAMP WITHOUT TIME ZONE
+    state      INT  NOT NULL DEFAULT 3,
+    start_at   TIMESTAMPTZ,
+    end_at     TIMESTAMPTZ
 );
 ALTER TABLE IF EXISTS public.pages
     OWNER to postgres;
@@ -59,16 +59,16 @@ CREATE TYPE question_type AS ENUM ('choose', 'fill_in', 'upload','none');
 CREATE TABLE questions
 (
 
-    id         SERIAL PRIMARY KEY,                                    -- 自增主键
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
+    id         SERIAL PRIMARY KEY,                                  -- 自增主键
+    created_at TIMESTAMPTZ               DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    updated_at TIMESTAMPTZ               DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
     title      TEXT             NOT NULL,
     "desc"     TEXT,
     "type"     question_type    NOT NULL,
     settings   jsonb,
     index      INT              NOT NULL,
-    max_score  INT              NOT NULL   DEFAULT 10,
-    score_step DOUBLE PRECISION NOT NULL   DEFAULT 1,
+    max_score  INT              NOT NULL DEFAULT 10,
+    score_step DOUBLE PRECISION NOT NULL DEFAULT 1,
 
     page_id    INTEGER          NOT NULL REFERENCES pages (id)
 );
@@ -82,9 +82,9 @@ EXECUTE PROCEDURE update_timestamp();
 
 CREATE TABLE answers
 (
-    id          SERIAL PRIMARY KEY,                                    -- 自增主键
-    created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
-    updated_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
+    id          SERIAL PRIMARY KEY,                    -- 自增主键
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    updated_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
     content     TEXT,
     details     jsonb,
 
@@ -97,6 +97,8 @@ CREATE TABLE answers
 
 ALTER TABLE IF EXISTS public.answers
     OWNER to postgres;
+CREATE UNIQUE INDEX employees_pk
+    ON answers (answerer_id, question_id);
 
 CREATE TRIGGER update_timestamp_trigger
     BEFORE UPDATE
@@ -106,8 +108,8 @@ EXECUTE PROCEDURE update_timestamp();
 
 CREATE TABLE user_page
 (
-    id         SERIAL PRIMARY KEY,                                    -- 自增主键
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    id         SERIAL PRIMARY KEY,                    -- 自增主键
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     user_id    INTEGER REFERENCES users (id),
     page_id    INTEGER REFERENCES pages (id),
     CONSTRAINT up UNIQUE (user_id, page_id)
@@ -119,8 +121,8 @@ ALTER TABLE IF EXISTS public.user_page
 
 CREATE TABLE scorer_question
 (
-    id          SERIAL PRIMARY KEY,                                    -- 自增主键
-    created_at  TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    id          SERIAL PRIMARY KEY,                    -- 自增主键
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
     user_id     INTEGER REFERENCES users (id),
     question_id INTEGER REFERENCES questions (id),
     CONSTRAINT sq UNIQUE (user_id, question_id)

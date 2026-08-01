@@ -21,11 +21,11 @@ namespace permission
         enable = 1,
         // 用户是否可见
         visible = 2,
-        // 可见但不可进入
+        // 可见且可进入
         readable = 4,
-        // 不可提交
+        // 可提交
         submittable = 8,
-        // 不可更改记录
+        // 可更改记录
         changeable = 16,
 
         // 审阅者是否可见

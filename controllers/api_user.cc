@@ -9,8 +9,6 @@
 #include "utils/token.h"
 #include "utils/transform.h"
 #include <bcrypt/BCrypt.hpp>
-#include <format>
-
 #include "plugins/password_encoder/password_encoder.h"
 
 using namespace api;
@@ -226,6 +224,8 @@ Task<> user::logout(HttpRequestPtr req,
     drogon::Cookie cookie("refresh_token", "");
     cookie.setMaxAge(0);
     cookie.setPath("/api/user/refresh");
+    
+    auto a = 1;
 
     const auto resp = response::success();
     resp->addCookie(cookie);

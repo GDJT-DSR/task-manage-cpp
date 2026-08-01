@@ -9,7 +9,7 @@
 namespace d_utils
 {
     template <typename T = std::string>
-    bool add_to_json_if_exist(Json::Value& json, const drogon::orm::Field field, const std::string& c)
+    bool add_to_json_if_exist(Json::Value& json, const drogon::orm::Field& field, const std::string& c)
     {
         if (!field.isNull())
         {
@@ -26,7 +26,7 @@ namespace d_utils
     }
 
     template <>
-    inline bool add_to_json_if_exist<Json::Value>(Json::Value& json, const drogon::orm::Field field,
+    inline bool add_to_json_if_exist<Json::Value>(Json::Value& json, const drogon::orm::Field& field,
                                                   const std::string& c)
     {
         if (field.isNull()) { return false; }
@@ -36,7 +36,8 @@ namespace d_utils
         // 解析原始字符串
         try
         {
-            json[c] = transform::string2json(str);
+            const auto res = transform::string2json(str);
+            json[c] = res;
             return true;
         }
         catch (const std::exception& e) { LOG_ERROR << e.what(); }
@@ -46,7 +47,7 @@ namespace d_utils
     }
 
     template <>
-    inline bool add_to_json_if_exist<std::string>(Json::Value& json, const drogon::orm::Field field,
+    inline bool add_to_json_if_exist<std::string>(Json::Value& json, const drogon::orm::Field& field,
                                                   const std::string& c)
     {
         if (field.isNull()) { return false; }
