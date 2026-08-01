@@ -156,21 +156,14 @@ Task<> page::getSingle(const HttpRequestPtr req,
         d_utils::add_to_json_if_exist(data, page, "start_at");
         d_utils::add_to_json_if_exist(data, page, "end_at");
         Json::Value arr(Json::arrayValue);
-        bool showAnswers = !has_permission(state, changeable);
-
-        // const auto end_at_str = page["end_at"].c_str();
-        // if (end_at_str && *end_at_str)
-        // {
-        //     if (auto end_at = trantor::Date::fromDbString(end_at_str), now = trantor::Date::now();
-        //         end_at < now) { showAnswers = true; }
-        // }
-
+        bool isChangeable = has_permission(state, changeable);
+        bool isEnd = false;
         if (const auto endAtField = page["end_at"]; !endAtField.isNull())
         {
             const auto endAtStr = endAtField.c_str();
             const auto endAtTime = d_utils::parseFromDbString(endAtStr);
             const auto now = std::chrono::system_clock::now();
-            if (endAtTime < now) { showAnswers = true; }
+            if (endAtTime < now) { isEnd = true; }
         }
 
         for (const auto& question : questionsWithAnswer)
@@ -183,12 +176,13 @@ Task<> page::getSingle(const HttpRequestPtr req,
             single["type"] = type;
             // d_utils::add_to_json_if_exist<Json::Value>(single, question,
             //                                            "settings");
-
-            parseSettings(single, question, showAnswers && !question["ans_id"].isNull(),
+            bool hasAnswer = !question["ans_id"].isNull();
+            parseSettings(single, question,
+                          (hasAnswer && !isChangeable) || isEnd || (hasAnswer && !question["score"].isNull()),
                           type == "choose");
             // single["index"] = question["index"].as<int>();
             single["max_score"] = question["max_score"].as<int>();
-            if (!question["ans_id"].isNull())
+            if (hasAnswer)
             {
                 Json::Value answer;
                 answer["id"] = question["ans_id"].as<int>();

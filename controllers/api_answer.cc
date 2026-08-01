@@ -91,7 +91,7 @@ Task<> answer::text(HttpRequestPtr req,
             co_return;
         }
         const auto answers = co_await client->execSqlCoro(
-            "SELECT id FROM answers WHERE answerer_id = $1 AND question_id = "
+            "SELECT id, score FROM answers WHERE answerer_id = $1 AND question_id = "
             "$2;",
             userid, question_id);
         const auto& question = questions.front();
@@ -102,10 +102,14 @@ Task<> answer::text(HttpRequestPtr req,
             callback(response::fail(k400BadRequest, str));
             co_return;
         }
+        // 判断是否有评分
+        if (!answers.empty() && !answers.front()["score"].isNull())
+        {
+            callback(response::fail(k400BadRequest, "已评分完毕"));
+            co_return;
+        }
 
         // 验证通过，可以提交
-
-
         if (answers.empty())
         {
             // 生成新的回答
@@ -202,7 +206,7 @@ Task<> answer::image(HttpRequestPtr req,
             co_return;
         }
         const auto answers =
-            co_await client->execSqlCoro("SELECT id,content FROM answers WHERE "
+            co_await client->execSqlCoro("SELECT id, content, score FROM answers WHERE "
                                          "answerer_id = $1 AND question_id = "
                                          "$2;",
                                          userid, id);
@@ -214,6 +218,12 @@ Task<> answer::image(HttpRequestPtr req,
             callback(response::fail(k400BadRequest, str));
             co_return;
         }
+        // 判断是否有评分
+        if (!answers.empty() && !answers.front()["score"].isNull())
+        {
+            callback(response::fail(k400BadRequest, "已评分完毕"));
+            co_return;
+        }
         // 获取文件以待验证
         const auto& file = parser.getFiles().front();
         // 验证后缀名等
@@ -221,8 +231,9 @@ Task<> answer::image(HttpRequestPtr req,
         // const Json::Value& exts = settings["ext"];
         const std::string ext{file.getFileExtension()};
         const auto uuid = utils::getUuid();
+        const auto saveName = (uuid + '.' + ext);
         const auto name = uuid + ".webp";
-        if (file.saveAs(uuid) != 0)
+        if (file.saveAs(saveName) != 0)
         {
             co_return callback(
                 response::fail(k500InternalServerError, "保存失败"));
@@ -230,8 +241,11 @@ Task<> answer::image(HttpRequestPtr req,
 
         // 图片压缩
         static const std::filesystem::path uploadPath = app().getUploadPath();
-        const std::filesystem::path tempPath = uploadPath / uuid;
-        convertToWebpFile(tempPath, "./html/uploads/" + name);
+        static const std::filesystem::path savePath{"./html/uploads"};
+        const std::filesystem::path tempPath = uploadPath / saveName;
+        const std::filesystem::path targetPath = savePath / name;
+        convertToWebpFile(tempPath, targetPath);
+
         std::filesystem::remove(tempPath);
 
 
@@ -258,9 +272,9 @@ Task<> answer::image(HttpRequestPtr req,
             const auto answer = answers.front();
             const auto originFile = answer["content"].as<std::string>();
 
-            const auto filePath = uploadPath / originFile;
+            // const auto filePath = uploadPath / originFile;
 
-            if (!std::filesystem::remove(uploadPath / originFile))
+            if (!std::filesystem::remove(savePath / originFile))
             {
                 LOG_ERROR << std::format(
                     "error occurred when removing upload file : {}",
@@ -336,14 +350,21 @@ Task<> answer::choose(HttpRequestPtr req, std::function<void(const HttpResponseP
             co_return;
         }
         const auto answers = co_await client->execSqlCoro(
-            "SELECT id FROM answers WHERE answerer_id = $1 AND question_id = $2;",
+            "SELECT id, score FROM answers WHERE answerer_id = $1 AND question_id = $2;",
             userid, question_id);
         const auto& question = questions.front();
+
         // 验证权限
         const auto str = validate(question, "choose", !answers.empty());
         if (!str.empty())
         {
             callback(response::fail(k400BadRequest, str));
+            co_return;
+        }
+        // 判断是否有评分
+        if (!answers.empty() && !answers.front()["score"].isNull())
+        {
+            callback(response::fail(k400BadRequest, "已评分完毕"));
             co_return;
         }
         // 验证输入是否合法

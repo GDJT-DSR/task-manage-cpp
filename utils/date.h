@@ -9,7 +9,7 @@
 
 namespace d_utils
 {
-    date::sys_seconds parseFromDbString(const std::string& str);
+    date::sys_seconds parseFromDbString(const char*);
 } // d_utils
 
 #endif //TASKCPP_DATE_H
