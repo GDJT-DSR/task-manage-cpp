@@ -119,7 +119,7 @@ Task<> score::getSingle(HttpRequestPtr req,
     {
         // 验证权限
         const auto questions = co_await client->execSqlCoro(
-            "SELECT type,max_score,score_step,state FROM questions "
+            R"(SELECT type,max_score,score_step,state,"precision" FROM questions )"
             "JOIN pages ON pages.id = page_id "
             "WHERE questions.id = $1",
             std::to_string(id));
@@ -132,6 +132,7 @@ Task<> score::getSingle(HttpRequestPtr req,
         resp["type"] = type;
         resp["max_score"] = question["max_score"].as<int>();
         resp["score_step"] = question["score_step"].as<int>();
+        resp["precision"] = question["precision"].as<int>();
         Json::Value arr(Json::arrayValue);
         const auto answers = co_await client->execSqlCoro(
             "SELECT id,content,details,score from answers WHERE scorer_id = $1 "

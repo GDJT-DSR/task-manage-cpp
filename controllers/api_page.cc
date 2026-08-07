@@ -140,7 +140,7 @@ Task<> page::getSingle(const HttpRequestPtr req,
             co_return;
         }
         const auto& questionsWithAnswer = co_await client->execSqlCoro(
-            R"(SELECT questions.id,title,"desc",type,settings,max_score,)"
+            R"(SELECT questions.id,title,"desc",type,settings,max_score,"precision",)"
             "answers.id as ans_id,"
             "content,details,score,answers.updated_at "
             "from questions LEFT JOIN answers "
@@ -182,10 +182,11 @@ Task<> page::getSingle(const HttpRequestPtr req,
                           type == "choose");
             // single["index"] = question["index"].as<int>();
             single["max_score"] = question["max_score"].as<int>();
+            single["precision"] = question["precision"].as<int>();
             if (hasAnswer)
             {
                 Json::Value answer;
-                answer["id"] = question["ans_id"].as<int>();
+                // answer["id"] = question["ans_id"].as<int>();
                 answer["updated_at"] = question["updated_at"].as<std::string>();
                 d_utils::add_to_json_if_exist(answer, question, "content");
                 d_utils::add_to_json_if_exist<int>(answer, question, "score");

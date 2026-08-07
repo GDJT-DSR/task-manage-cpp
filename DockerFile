@@ -1,1 +1,102 @@
+# 多阶段构建 - 构建阶段
+FROM ubuntu:22.04 AS builder
 
+# 设置非交互式安装
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 设置工作目录
+WORKDIR /build
+
+# 安装构建依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    libjsoncpp-dev \
+    libssl-dev \
+    zlib1g-dev \
+    uuid-dev \
+    libpq-dev \
+    libhiredis-dev \
+    libsqlite3-dev \
+    libbrotli-dev \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 libbcrypt (需要从源码编译)
+RUN git clone https://github.com/trippel/libbcrypt.git /tmp/libbcrypt \
+    && cd /tmp/libbcrypt \
+    && make \
+    && make install \
+    && ldconfig \
+    && rm -rf /tmp/libbcrypt
+
+# 安装 asio (Drogon 依赖)
+RUN apt-get update && apt-get install -y --no-install-recommends libasio-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 Drogon (从源码编译以支持 C++20 协程)
+RUN git clone --depth 1 https://github.com/drogonframework/drogon.git /tmp/drogon \
+    && cd /tmp/drogon \
+    && mkdir build && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=OFF .. \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig \
+    && rm -rf /tmp/drogon
+
+# 复制项目源码
+COPY . /build/taskcpp
+
+# 构建 项目
+WORKDIR /build/taskcpp
+RUN mkdir build && cd build \
+    && cmake -DCMAKE_BUILD_TYPE=Release .. \
+    && make -j$(nproc)
+
+# 运行阶段 - 最小化镜像
+FROM ubuntu:22.04 AS runtime
+
+# 设置非交互式
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 安装运行时依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libjsoncpp25 \
+    libssl3 \
+    zlib1g \
+    libuuid1 \
+    libpq5 \
+    libhiredis0.14 \
+    libsqlite3-0 \
+    libbrotli1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制 libbcrypt 运行时库
+COPY --from=builder /usr/local/lib/libbcrypt.so* /usr/lib/
+
+# 复制 Drogon 运行时库
+COPY --from=builder /usr/local/lib/libdrogon.so* /usr/lib/
+COPY --from=builder /usr/local/lib/libtrantor.so* /usr/lib/
+
+# 创建应用目录
+WORKDIR /app
+
+# 复制编译好的可执行文件
+COPY --from=builder /build/taskcpp/build/taskcpp /app/
+
+# 复制配置文件
+COPY --from=builder /build/taskcpp/config.jsonc /app/
+COPY --from=builder /build/taskcpp/config.yaml /app/
+
+# 创建上传目录
+RUN mkdir -p /app/uploads
+
+# 暴露端口 (与 config.jsonc 中配置一致)
+EXPOSE 5555
+
+# 设置环境变量
+ENV TZ=Asia/Shanghai
+
+# 运行应用
+CMD ["./taskcpp"]

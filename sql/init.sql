@@ -54,23 +54,24 @@ CREATE TRIGGER update_timestamp_trigger
     FOR EACH ROW
 EXECUTE PROCEDURE update_timestamp();
 
-CREATE TYPE question_type AS ENUM ('choose', 'fill_in', 'upload','none');
+CREATE TYPE question_type AS ENUM ('choose', 'fill_in', 'upload', 'none');
 
 CREATE TABLE questions
 (
 
-    id         SERIAL PRIMARY KEY,                                  -- 自增主键
-    created_at TIMESTAMPTZ               DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
-    updated_at TIMESTAMPTZ               DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
-    title      TEXT             NOT NULL,
-    "desc"     TEXT,
-    "type"     question_type    NOT NULL,
-    settings   jsonb,
-    index      INT              NOT NULL,
-    max_score  INT              NOT NULL DEFAULT 10,
-    score_step DOUBLE PRECISION NOT NULL DEFAULT 1,
+    id          SERIAL PRIMARY KEY,                               -- 自增主键
+    created_at  TIMESTAMPTZ            DEFAULT CURRENT_TIMESTAMP, -- 创建时间，自动设置为当前时间
+    updated_at  TIMESTAMPTZ            DEFAULT CURRENT_TIMESTAMP, -- 更新时间，自动设置为当前时间
+    title       TEXT          NOT NULL,
+    "desc"      TEXT,
+    "type"      question_type NOT NULL,
+    settings    jsonb,
+    index       INT           NOT NULL,
+    max_score   INT           NOT NULL DEFAULT 10,
+    score_step  INT           NOT NULL DEFAULT 1,
+    "precision" integer       NOT NULL DEFAULT 0,
 
-    page_id    INTEGER          NOT NULL REFERENCES pages (id)
+    page_id     INTEGER       NOT NULL REFERENCES pages (id)
 );
 ALTER TABLE IF EXISTS public.questions
     OWNER to postgres;

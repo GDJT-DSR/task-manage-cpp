@@ -1,0 +1,28 @@
+# 构建目录
+build/
+cmake-build-*/
+
+# IDE 配置
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# 日志和临时文件
+log/
+*.log
+uploads/
+
+# macOS
+.DS_Store
+
+# 测试
+test/
+
+# 其他
+*.md
+.editorconfig

@@ -26,27 +26,6 @@ namespace d_utils
     }
 
     template <>
-    inline bool add_to_json_if_exist<Json::Value>(Json::Value& json, const drogon::orm::Field& field,
-                                                  const std::string& c)
-    {
-        if (field.isNull()) { return false; }
-        const std::string str = field.as<std::string>();
-        if (str.empty()) { return false; }
-
-        // 解析原始字符串
-        try
-        {
-            const auto res = transform::string2json(str);
-            json[c] = res;
-            return true;
-        }
-        catch (const std::exception& e) { LOG_ERROR << e.what(); }
-        catch (...) {}
-
-        return false;
-    }
-
-    template <>
     inline bool add_to_json_if_exist<std::string>(Json::Value& json, const drogon::orm::Field& field,
                                                   const std::string& c)
     {
