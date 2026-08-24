@@ -7,15 +7,16 @@ include(CheckIncludeFileCXX)
 check_include_file_cxx(any HAS_ANY)
 check_include_file_cxx(string_view HAS_STRING_VIEW)
 check_include_file_cxx(coroutine HAS_COROUTINE)
-if (NOT "${CMAKE_CXX_STANDARD}" STREQUAL "")
-    # Do nothing
-elseif (HAS_ANY AND HAS_STRING_VIEW AND HAS_COROUTINE)
-    set(CMAKE_CXX_STANDARD 20)
-elseif (HAS_ANY AND HAS_STRING_VIEW)
-    set(CMAKE_CXX_STANDARD 17)
-else ()
-    set(CMAKE_CXX_STANDARD 14)
-endif ()
+#if (NOT "${CMAKE_CXX_STANDARD}" STREQUAL "")
+#    # Do nothing
+#elseif (HAS_ANY AND HAS_STRING_VIEW AND HAS_COROUTINE)
+#    set(CMAKE_CXX_STANDARD 20)
+#elseif (HAS_ANY AND HAS_STRING_VIEW)
+#    set(CMAKE_CXX_STANDARD 17)
+#else ()
+#    set(CMAKE_CXX_STANDARD 14)
+#endif ()
+set(CMAKE_CXX_STANDARD 20)
 #set(CMAKE_CXX_STANDARD 23)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -96,29 +97,28 @@ message(STATUS "找到 libbcrypt: ${BCRYPT_LIBRARY}")
 message(STATUS "找到 bcrypt.h: ${BCRYPT_INCLUDE_DIR}")
 
 
-find_library(WEBP_LIB
-        NAMES webp libwebp
-        HINTS
-        # /usr/local/opt/libbcrypt/lib    # Homebrew (Intel)
-        # /opt/homebrew/opt/libbcrypt/lib # Homebrew (Apple Silicon)
-        # /usr/local/lib                  # 默认安装路径
-        /usr/local/include/bcrypt
-        /opt/homebrew/Cellar/webp/1.6.0/lib
-)
-find_path(WEBP_INCLUDE_DIR
-        NAMES bcrypt.h
-        HINTS
-        /usr/local/include/bcrypt
-        /opt/homebrew/Cellar/webp/1.6.0/include/webp/
-)
+#find_library(WEBP_LIB
+#        NAMES webp libwebp
+#        HINTS
+#        /opt/homebrew/Cellar/webp/1.6.0/lib
+#        /usr/local/lib
+#)
+#find_path(WEBP_INCLUDE_DIR
+#        NAMES bcrypt.h
+#        HINTS
+#        /opt/homebrew/Cellar/webp/1.6.0/include/webp/
+#        /usr/local/include/webp
+#)
+
+#message(${WEBP_INCLUDE_DIR})
 
 target_include_directories(${PROJECT_NAME}
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/models
         ${CMAKE_CURRENT_SOURCE_DIR}/jwt
         ${BCRYPT_INCLUDE_DIR}
-        ${WEBP_INCLUDE_DIR}
-        )
+        #        ${WEBP_INCLUDE_DIR}
+)
 
 target_link_libraries(taskcpp PRIVATE ${BCRYPT_LIBRARY})
 target_link_libraries(taskcpp PRIVATE ${WEBP_LIB})
